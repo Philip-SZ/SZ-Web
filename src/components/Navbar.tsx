@@ -151,19 +151,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <div className="flex flex-col items-end">
                   <div className="flex items-center gap-1.5">
                     <span className={`text-xs font-semibold ${isLight ? 'text-slate-800' : 'text-slate-200'}`}>{currentUser.username}</span>
-                    {isPhillipDev ? (
-                      <span className="px-1.5 py-0.5 text-[9px] font-bold bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/40 rounded-md uppercase tracking-wider">
-                        👑 Admin
-                      </span>
-                    ) : isApproved ? (
-                      <span className="px-1.5 py-0.5 text-[9px] font-bold bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 border border-emerald-500/40 rounded-md uppercase tracking-wider">
-                        Freigeschaltet
-                      </span>
-                    ) : (
-                      <span className="px-1.5 py-0.5 text-[9px] font-bold bg-amber-500/20 text-amber-500 border border-amber-500/40 rounded-md uppercase tracking-wider flex items-center gap-1">
-                        <Lock className="w-2.5 h-2.5" /> Ausstehend
-                      </span>
-                    )}
                   </div>
                 </div>
 
