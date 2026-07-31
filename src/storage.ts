@@ -22,8 +22,34 @@ export const DEFAULT_SETTINGS: AppSettings = {
   autoDownload: true,
 };
 
+function safeGetItem(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeSetItem(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch {}
+}
+
+function safeRemoveItem(key: string): void {
+  try {
+    localStorage.removeItem(key);
+  } catch {}
+}
+
+function safeClear(): void {
+  try {
+    localStorage.clear();
+  } catch {}
+}
+
 export function getSettings(): AppSettings {
-  const raw = localStorage.getItem(SETTINGS_KEY);
+  const raw = safeGetItem(SETTINGS_KEY);
   if (!raw) return DEFAULT_SETTINGS;
   try {
     return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
@@ -35,20 +61,20 @@ export function getSettings(): AppSettings {
 export function saveSettings(settings: Partial<AppSettings>): AppSettings {
   const current = getSettings();
   const updated = { ...current, ...settings };
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(updated));
+  safeSetItem(SETTINGS_KEY, JSON.stringify(updated));
   return updated;
 }
 
 export function resetAllData(): void {
-  localStorage.clear();
+  safeClear();
   initializeStorage();
 }
 
-// Helper to encode a string into a downloadable text/data URL
+// Helper to encode a string into a portable data URL
 export function createDataUrl(content: string, mimeType: string = 'text/plain'): string {
-  const blob = new Blob([content], { type: mimeType });
-  return URL.createObjectURL(blob);
+  return `data:${mimeType};charset=utf-8,${encodeURIComponent(content)}`;
 }
+
 
 // Initial seed data for Phillip Dev and sample posts
 const SEED_USERS: (User & { passwordHash: string })[] = [
@@ -174,12 +200,12 @@ const SEED_POSTS: Post[] = [
 
 // Initialize LocalStorage if not present
 export function initializeStorage(): void {
-  if (!localStorage.getItem(USERS_KEY)) {
-    localStorage.setItem(USERS_KEY, JSON.stringify(SEED_USERS));
+  if (!safeGetItem(USERS_KEY)) {
+    safeSetItem(USERS_KEY, JSON.stringify(SEED_USERS));
   } else {
     // Ensure Phillip Dev password in local storage is updated to 'Ingolstadt 2015'
     try {
-      const users: (User & { passwordHash: string })[] = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
+      const users: (User & { passwordHash: string })[] = JSON.parse(safeGetItem(USERS_KEY) || '[]');
       let updated = false;
       users.forEach(u => {
         if (u.username.toLowerCase().replace(/\s+/g, '') === 'phillipdev') {
@@ -188,30 +214,30 @@ export function initializeStorage(): void {
         }
       });
       if (updated) {
-        localStorage.setItem(USERS_KEY, JSON.stringify(users));
+        safeSetItem(USERS_KEY, JSON.stringify(users));
       }
     } catch {}
   }
-  if (!localStorage.getItem(POSTS_KEY)) {
-    localStorage.setItem(POSTS_KEY, JSON.stringify(SEED_POSTS));
+  if (!safeGetItem(POSTS_KEY)) {
+    safeSetItem(POSTS_KEY, JSON.stringify(SEED_POSTS));
   }
-  if (!localStorage.getItem(BOOKMARKS_KEY)) {
-    localStorage.setItem(BOOKMARKS_KEY, JSON.stringify(['post_1']));
+  if (!safeGetItem(BOOKMARKS_KEY)) {
+    safeSetItem(BOOKMARKS_KEY, JSON.stringify(['post_1']));
   }
-  if (!localStorage.getItem(CURRENT_USER_KEY)) {
+  if (!safeGetItem(CURRENT_USER_KEY)) {
     // Default to Phillip Dev for convenience or logged out
     const users = getUsersWithPasswords();
     const phillip = users.find(u => u.username.toLowerCase().replace(/\s+/g, '') === 'phillipdev');
     if (phillip) {
       const { passwordHash, ...safeUser } = phillip;
-      localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(safeUser));
+      safeSetItem(CURRENT_USER_KEY, JSON.stringify(safeUser));
     }
   }
 }
 
 // User Helpers
 export function getUsersWithPasswords(): (User & { passwordHash: string })[] {
-  const raw = localStorage.getItem(USERS_KEY);
+  const raw = safeGetItem(USERS_KEY);
   if (!raw) return SEED_USERS;
   try {
     return JSON.parse(raw);
@@ -225,7 +251,7 @@ export function getUsers(): User[] {
 }
 
 export function getCurrentUser(): User | null {
-  const raw = localStorage.getItem(CURRENT_USER_KEY);
+  const raw = safeGetItem(CURRENT_USER_KEY);
   if (!raw) return null;
   try {
     const safeUser: User = JSON.parse(raw);
@@ -240,9 +266,9 @@ export function getCurrentUser(): User | null {
 
 export function setCurrentUser(user: User | null): void {
   if (user) {
-    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
+    safeSetItem(CURRENT_USER_KEY, JSON.stringify(user));
   } else {
-    localStorage.removeItem(CURRENT_USER_KEY);
+    safeRemoveItem(CURRENT_USER_KEY);
   }
 }
 
@@ -270,7 +296,7 @@ export function registerUser(username: string, email: string, password: string):
   };
 
   users.push(newUser);
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  safeSetItem(USERS_KEY, JSON.stringify(users));
 
   const { passwordHash, ...safeUser } = newUser;
   setCurrentUser(safeUser);
@@ -310,7 +336,7 @@ export function releaseUser(userId: string): boolean {
   if (index === -1) return false;
 
   users[index].status = 'approved';
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  safeSetItem(USERS_KEY, JSON.stringify(users));
   return true;
 }
 
@@ -318,13 +344,13 @@ export function releaseUser(userId: string): boolean {
 export function removeUser(userId: string): boolean {
   let users = getUsersWithPasswords();
   users = users.filter(u => u.id !== userId);
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  safeSetItem(USERS_KEY, JSON.stringify(users));
   return true;
 }
 
 // Post Management
 export function getPosts(): Post[] {
-  const raw = localStorage.getItem(POSTS_KEY);
+  const raw = safeGetItem(POSTS_KEY);
   if (!raw) return SEED_POSTS;
   try {
     return JSON.parse(raw);
@@ -347,7 +373,7 @@ export function createPost(title: string, content: string, attachments: FileAtta
   };
 
   posts.unshift(newPost);
-  localStorage.setItem(POSTS_KEY, JSON.stringify(posts));
+  safeSetItem(POSTS_KEY, JSON.stringify(posts));
   return newPost;
 }
 
@@ -359,14 +385,14 @@ export function recordDownload(postId: string, attachmentId: string): void {
     const att = post.attachments.find(a => a.id === attachmentId);
     if (att) {
       att.downloadCount = (att.downloadCount || 0) + 1;
-      localStorage.setItem(POSTS_KEY, JSON.stringify(posts));
+      safeSetItem(POSTS_KEY, JSON.stringify(posts));
     }
   }
 }
 
 // Bookmarks Management
 export function getBookmarks(userId: string): string[] {
-  const raw = localStorage.getItem(`${BOOKMARKS_KEY}_${userId}`);
+  const raw = safeGetItem(`${BOOKMARKS_KEY}_${userId}`);
   if (!raw) return [];
   try {
     return JSON.parse(raw);
@@ -383,6 +409,7 @@ export function toggleBookmark(userId: string, postId: string): string[] {
   } else {
     updated = [...current, postId];
   }
-  localStorage.setItem(`${BOOKMARKS_KEY}_${userId}`, JSON.stringify(updated));
+  safeSetItem(`${BOOKMARKS_KEY}_${userId}`, JSON.stringify(updated));
   return updated;
 }
+
