@@ -1,0 +1,6 @@
+{
+  "name": "SZ Portal",
+  "description": "SZ Portal - Jeden Tag neue Nachrichten",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
