@@ -8,9 +8,11 @@ interface LoginRegisterModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (user: User) => void;
+  language?: 'de' | 'en';
 }
 
-export const LoginRegisterModal: React.FC<LoginRegisterModalProps> = ({ isOpen, onClose, onSuccess }) => {
+export const LoginRegisterModal: React.FC<LoginRegisterModalProps> = ({ isOpen, onClose, onSuccess, language = 'de' }) => {
+  const isDe = language === 'de';
   const [mode, setMode] = useState<'login' | 'register'>('login');
   
   // Login form
@@ -37,7 +39,7 @@ export const LoginRegisterModal: React.FC<LoginRegisterModalProps> = ({ isOpen, 
       onSuccess(res.user);
       onClose();
     } else {
-      setError(res.error || 'Anmeldung fehlgeschlagen.');
+      setError(res.error || (isDe ? 'Anmeldung fehlgeschlagen.' : 'Login failed.'));
     }
   };
 
@@ -47,14 +49,14 @@ export const LoginRegisterModal: React.FC<LoginRegisterModalProps> = ({ isOpen, 
     setSuccessInfo(null);
 
     if (!regUsername || !regPassword) {
-      setError('Bitte alle erforderlichen Felder ausfüllen.');
+      setError(isDe ? 'Bitte alle erforderlichen Felder ausfüllen.' : 'Please fill in all required fields.');
       return;
     }
 
     const res = registerUser(regUsername, regEmail || `${regUsername.toLowerCase().replace(/\s+/g, '')}@example.com`, regPassword);
     if (res.success && res.user) {
       if (res.user.status === 'pending') {
-        setSuccessInfo('Registrierung eingereicht.');
+        setSuccessInfo(isDe ? 'Registrierung eingereicht.' : 'Registration submitted.');
         setTimeout(() => {
           onSuccess(res.user!);
           onClose();
@@ -64,7 +66,7 @@ export const LoginRegisterModal: React.FC<LoginRegisterModalProps> = ({ isOpen, 
         onClose();
       }
     } else {
-      setError(res.error || 'Registrierung fehlgeschlagen.');
+      setError(res.error || (isDe ? 'Registrierung fehlgeschlagen.' : 'Registration failed.'));
     }
   };
 
@@ -88,7 +90,7 @@ export const LoginRegisterModal: React.FC<LoginRegisterModalProps> = ({ isOpen, 
           {/* Header */}
           <div className="mb-6">
             <h2 className="text-xl font-bold text-slate-100">
-              {mode === 'login' ? 'Einloggen' : 'Registrieren'}
+              {mode === 'login' ? (isDe ? 'Einloggen' : 'Sign In') : (isDe ? 'Registrieren' : 'Register')}
             </h2>
           </div>
 
@@ -101,7 +103,7 @@ export const LoginRegisterModal: React.FC<LoginRegisterModalProps> = ({ isOpen, 
               }`}
             >
               <KeyRound className="w-3.5 h-3.5" />
-              Einloggen
+              {isDe ? 'Einloggen' : 'Sign In'}
             </button>
             <button
               onClick={() => { setMode('register'); setError(null); }}
@@ -110,7 +112,7 @@ export const LoginRegisterModal: React.FC<LoginRegisterModalProps> = ({ isOpen, 
               }`}
             >
               <UserPlus className="w-3.5 h-3.5" />
-              Registrieren
+              {isDe ? 'Registrieren' : 'Register'}
             </button>
           </div>
 
@@ -133,24 +135,28 @@ export const LoginRegisterModal: React.FC<LoginRegisterModalProps> = ({ isOpen, 
           {mode === 'login' ? (
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Nutzername</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  {isDe ? 'Nutzername' : 'Username'}
+                </label>
                 <input
                   type="text"
                   value={loginUsername}
                   onChange={(e) => setLoginUsername(e.target.value)}
-                  placeholder="Nutzername"
+                  placeholder={isDe ? 'Nutzername' : 'Username'}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Passwort</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  {isDe ? 'Passwort' : 'Password'}
+                </label>
                 <input
                   type="password"
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
-                  placeholder="Passwort"
+                  placeholder={isDe ? 'Passwort' : 'Password'}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors"
                   required
                 />
@@ -160,18 +166,20 @@ export const LoginRegisterModal: React.FC<LoginRegisterModalProps> = ({ isOpen, 
                 type="submit"
                 className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl text-sm transition-all shadow-lg shadow-indigo-600/30"
               >
-                Einloggen
+                {isDe ? 'Einloggen' : 'Sign In'}
               </button>
             </form>
           ) : (
             <form onSubmit={handleRegister} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Nutzername</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  {isDe ? 'Nutzername' : 'Username'}
+                </label>
                 <input
                   type="text"
                   value={regUsername}
                   onChange={(e) => setRegUsername(e.target.value)}
-                  placeholder="Nutzername"
+                  placeholder={isDe ? 'Nutzername' : 'Username'}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors"
                   required
                 />
@@ -189,12 +197,14 @@ export const LoginRegisterModal: React.FC<LoginRegisterModalProps> = ({ isOpen, 
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Passwort</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  {isDe ? 'Passwort' : 'Password'}
+                </label>
                 <input
                   type="password"
                   value={regPassword}
                   onChange={(e) => setRegPassword(e.target.value)}
-                  placeholder="Passwort"
+                  placeholder={isDe ? 'Passwort' : 'Password'}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors"
                   required
                 />
@@ -204,7 +214,7 @@ export const LoginRegisterModal: React.FC<LoginRegisterModalProps> = ({ isOpen, 
                 type="submit"
                 className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl text-sm transition-all shadow-lg shadow-indigo-600/30"
               >
-                Registrieren
+                {isDe ? 'Registrieren' : 'Register'}
               </button>
             </form>
           )}

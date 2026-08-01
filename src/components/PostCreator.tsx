@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
-import { FileAttachment, Post } from '../types';
+import { FileAttachment, Post, User } from '../types';
 import { createPost, createDataUrl } from '../storage';
 import { X, Plus, Upload, FileText, Code, ShieldCheck, Tag, Trash2, CheckCircle2 } from 'lucide-react';
 
 interface PostCreatorProps {
+  currentUser?: User | null;
   isOpen: boolean;
   onClose: () => void;
   onPostCreated: (post: Post) => void;
   onToast: (message: string, type: 'success' | 'error' | 'info') => void;
+  language?: 'de' | 'en';
 }
 
-export const PostCreator: React.FC<PostCreatorProps> = ({ isOpen, onClose, onPostCreated, onToast }) => {
+export const PostCreator: React.FC<PostCreatorProps> = ({ currentUser, isOpen, onClose, onPostCreated, onToast, language = 'de' }) => {
+  const isDe = language === 'de';
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [tagsInput, setTagsInput] = useState('');
@@ -49,7 +52,12 @@ export const PostCreator: React.FC<PostCreatorProps> = ({ isOpen, onClose, onPos
 
   const handleAddSnippet = () => {
     if (!snippetName.trim() || !snippetBody.trim()) {
-      onToast('Please enter both filename and body content for the snippet.', 'error');
+      onToast(
+        isDe
+          ? 'Bitte sowohl Dateiname als auch Inhalt für das Snippet eingeben.'
+          : 'Please enter both filename and body content for the snippet.',
+        'error'
+      );
       return;
     }
 
@@ -73,7 +81,10 @@ export const PostCreator: React.FC<PostCreatorProps> = ({ isOpen, onClose, onPos
     setSnippetName('');
     setSnippetBody('');
     setShowSnippetForm(false);
-    onToast(`Added file attachment "${newAtt.name}"`, 'success');
+    onToast(
+      isDe ? `Dateianhang "${newAtt.name}" hinzugefügt` : `Added file attachment "${newAtt.name}"`,
+      'success'
+    );
   };
 
   const handleRemoveAttachment = (id: string) => {
@@ -83,7 +94,12 @@ export const PostCreator: React.FC<PostCreatorProps> = ({ isOpen, onClose, onPos
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !content.trim()) {
-      onToast('Please enter both post title and message content.', 'error');
+      onToast(
+        isDe
+          ? 'Bitte sowohl Titel als auch Nachrichteninhalt eingeben.'
+          : 'Please enter both post title and message content.',
+        'error'
+      );
       return;
     }
 
@@ -92,9 +108,12 @@ export const PostCreator: React.FC<PostCreatorProps> = ({ isOpen, onClose, onPos
       .map((t) => t.trim())
       .filter((t) => t.length > 0);
 
-    const post = createPost(title, content, attachments, tags);
+    const post = createPost(title, content, attachments, tags, currentUser);
     onPostCreated(post);
-    onToast('Post published successfully by Phillip Dev!', 'success');
+    onToast(
+      isDe ? `Beitrag von "${post.authorName}" veröffentlicht!` : `Post published by "${post.authorName}"!`,
+      'success'
+    );
     onClose();
   };
 
@@ -109,8 +128,14 @@ export const PostCreator: React.FC<PostCreatorProps> = ({ isOpen, onClose, onPos
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-100">Create New Developer Post</h2>
-              <p className="text-xs text-slate-400">Published directly by Phillip Dev for approved members</p>
+              <h2 className="text-base font-bold text-slate-100">
+                {isDe ? 'Neuen Entwickler-Beitrag erstellen' : 'Create New Developer Post'}
+              </h2>
+              <p className="text-xs text-slate-400">
+                {isDe
+                  ? 'Direkt von Phillip Dev für freigeschaltete Mitglieder veröffentlicht'
+                  : 'Published directly by Phillip Dev for approved members'}
+              </p>
             </div>
           </div>
 
@@ -125,35 +150,41 @@ export const PostCreator: React.FC<PostCreatorProps> = ({ isOpen, onClose, onPos
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">Post Title</label>
+            <label className="block text-xs font-semibold text-slate-300 mb-1">
+              {isDe ? 'Beitragstitel' : 'Post Title'}
+            </label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Architecture Update v2.5 & Downloadable Build"
+              placeholder={isDe ? 'z. B. Architektur-Update v2.5 & Download-Build' : 'e.g. Architecture Update v2.5 & Downloadable Build'}
               className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
               required
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">Tags (comma separated)</label>
+            <label className="block text-xs font-semibold text-slate-300 mb-1">
+              {isDe ? 'Tags (kommagetrennt)' : 'Tags (comma separated)'}
+            </label>
             <input
               type="text"
               value={tagsInput}
               onChange={(e) => setTagsInput(e.target.value)}
-              placeholder="e.g. Source Code, Documentation, Express"
+              placeholder={isDe ? 'z. B. Quellcode, Dokumentation, Express' : 'e.g. Source Code, Documentation, Express'}
               className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">Message Content</label>
+            <label className="block text-xs font-semibold text-slate-300 mb-1">
+              {isDe ? 'Nachrichteninhalt' : 'Message Content'}
+            </label>
             <textarea
               rows={5}
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              placeholder="Write update announcement or instructions for released members..."
+              placeholder={isDe ? 'Ankündigung oder Anweisungen für freigeschaltete Mitglieder schreiben...' : 'Write update announcement or instructions for released members...'}
               className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500"
               required
             />
@@ -162,11 +193,13 @@ export const PostCreator: React.FC<PostCreatorProps> = ({ isOpen, onClose, onPos
           {/* Attachments Section */}
           <div className="border-t border-slate-800 pt-4">
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-semibold text-slate-300">File Attachments ({attachments.length})</label>
+              <label className="text-xs font-semibold text-slate-300">
+                {isDe ? `Dateianhänge (${attachments.length})` : `File Attachments (${attachments.length})`}
+              </label>
               <div className="flex items-center gap-2">
                 <label className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg cursor-pointer flex items-center gap-1.5 transition-colors">
                   <Upload className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Upload Local File</span>
+                  <span>{isDe ? 'Lokale Datei hochladen' : 'Upload Local File'}</span>
                   <input type="file" multiple onChange={handleFileUpload} className="hidden" />
                 </label>
 
@@ -176,7 +209,7 @@ export const PostCreator: React.FC<PostCreatorProps> = ({ isOpen, onClose, onPos
                   className="px-3 py-1.5 bg-indigo-950/60 hover:bg-indigo-900/80 border border-indigo-800/60 text-indigo-200 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors"
                 >
                   <Code className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Create Text/Code Snippet</span>
+                  <span>{isDe ? 'Text/Code-Snippet erstellen' : 'Create Text/Code Snippet'}</span>
                 </button>
               </div>
             </div>
@@ -185,7 +218,9 @@ export const PostCreator: React.FC<PostCreatorProps> = ({ isOpen, onClose, onPos
             {showSnippetForm && (
               <div className="p-3 bg-slate-950 rounded-xl border border-indigo-500/30 mb-3 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-indigo-300">New Text / Code Attachment</span>
+                  <span className="text-xs font-bold text-indigo-300">
+                    {isDe ? 'Neuer Text / Code Anhang' : 'New Text / Code Attachment'}
+                  </span>
                   <button type="button" onClick={() => setShowSnippetForm(false)} className="text-slate-500 hover:text-slate-300">
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -194,14 +229,14 @@ export const PostCreator: React.FC<PostCreatorProps> = ({ isOpen, onClose, onPos
                   type="text"
                   value={snippetName}
                   onChange={(e) => setSnippetName(e.target.value)}
-                  placeholder="Filename (e.g. server_setup.ts or release_notes.txt)"
+                  placeholder={isDe ? 'Dateiname (z. B. setup.ts oder hinweise.txt)' : 'Filename (e.g. server_setup.ts or release_notes.txt)'}
                   className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200"
                 />
                 <textarea
                   rows={3}
                   value={snippetBody}
                   onChange={(e) => setSnippetBody(e.target.value)}
-                  placeholder="Paste file body or code text here..."
+                  placeholder={isDe ? 'Dateiinhalt oder Code-Text hier einfügen...' : 'Paste file body or code text here...'}
                   className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs font-mono text-slate-200"
                 />
                 <button
@@ -209,7 +244,7 @@ export const PostCreator: React.FC<PostCreatorProps> = ({ isOpen, onClose, onPos
                   onClick={handleAddSnippet}
                   className="w-full py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg text-xs"
                 >
-                  Attach Snippet to Post
+                  {isDe ? 'Snippet an Beitrag anhängen' : 'Attach Snippet to Post'}
                 </button>
               </div>
             )}
@@ -243,13 +278,13 @@ export const PostCreator: React.FC<PostCreatorProps> = ({ isOpen, onClose, onPos
               onClick={onClose}
               className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl text-xs transition-colors"
             >
-              Cancel
+              {isDe ? 'Abbrechen' : 'Cancel'}
             </button>
             <button
               type="submit"
               className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs transition-all shadow-lg shadow-indigo-600/30"
             >
-              Publish Post
+              {isDe ? 'Beitrag veröffentlichen' : 'Publish Post'}
             </button>
           </div>
         </form>

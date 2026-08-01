@@ -1,10 +1,13 @@
-import { User, Post, FileAttachment } from './types';
+import { User, UserRank, Post, FileAttachment, UserNotification, AppEvent, Comment } from './types';
 
 const USERS_KEY = 'phillip_dev_portal_users';
 const POSTS_KEY = 'phillip_dev_portal_posts';
 const BOOKMARKS_KEY = 'phillip_dev_portal_bookmarks';
 const CURRENT_USER_KEY = 'phillip_dev_portal_current_user';
 const SETTINGS_KEY = 'phillip_dev_portal_settings';
+const NOTIFICATIONS_KEY = 'phillip_dev_portal_notifications';
+const APP_EVENTS_KEY = 'phillip_dev_portal_app_events';
+const COMMENTS_KEY = 'phillip_dev_portal_comments';
 
 export interface AppSettings {
   theme: 'dark' | 'light';
@@ -30,10 +33,13 @@ function safeGetItem(key: string): string | null {
   }
 }
 
-function safeSetItem(key: string, value: string): void {
+function safeSetItem(key: string, value: string): boolean {
   try {
     localStorage.setItem(key, value);
-  } catch {}
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function safeRemoveItem(key: string): void {
@@ -86,6 +92,10 @@ const SEED_USERS: (User & { passwordHash: string })[] = [
     status: 'approved',
     createdAt: new Date(Date.now() - 86400000 * 10).toISOString(),
     passwordHash: 'Ingolstadt 2015',
+    isVerified: true,
+    rank: 'admin',
+    bio: 'Founder & Admin of Phillip Dev Portal. Building high-performance microservices and software tools.',
+    friends: ['usr_alex_approved'],
   },
   {
     id: 'usr_alex_approved',
@@ -95,6 +105,10 @@ const SEED_USERS: (User & { passwordHash: string })[] = [
     status: 'approved',
     createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
     passwordHash: 'password123',
+    isVerified: true,
+    rank: 'developer',
+    bio: 'Fullstack JavaScript & TypeScript developer. Enthusiastic community contributor.',
+    friends: ['usr_phillip_dev'],
   },
   {
     id: 'usr_sarah_pending',
@@ -104,6 +118,10 @@ const SEED_USERS: (User & { passwordHash: string })[] = [
     status: 'pending',
     createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
     passwordHash: 'password123',
+    isVerified: false,
+    rank: 'not_granted',
+    bio: 'Awaiting account approval.',
+    friends: [],
   }
 ];
 
@@ -196,6 +214,128 @@ const SEED_POSTS: Post[] = [
       }
     ],
   },
+  {
+    id: 'post_creator_1',
+    authorId: 'usr_alex_approved',
+    authorName: 'Alex Johnson',
+    title: 'Gedanken zur Microservice Skalierbarkeit',
+    content: 'Als Creator teile ich hier meine Perspektive zu Event-Driven Architekturen in verteilten Systemen. Freue mich auf euer Feedback und eure Kommentare!',
+    createdAt: new Date(Date.now() - 3600000 * 12).toISOString(),
+    tags: ['Creator', 'Opinion'],
+    isCreatorTabPost: true,
+    rating: 5,
+    status: 'approved',
+    likes: ['usr_phillip_dev'],
+    attachments: [],
+  },
+];
+
+// Seed notifications
+const SEED_NOTIFICATIONS: UserNotification[] = [
+  {
+    id: 'notif_1',
+    userId: 'usr_alex_approved',
+    title: 'Verifizierungsstatus aktualisiert',
+    message: 'Du hast den blauen Haken von Phillip Dev erhalten! Dein Konto ist jetzt verifiziert.',
+    type: 'badge',
+    createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
+    read: false,
+  },
+  {
+    id: 'notif_2',
+    userId: 'usr_alex_approved',
+    title: 'Konto freigeschaltet!',
+    message: 'Dein Konto wurde von Phillip Dev freigeschaltet. Du kannst nun alle Beiträge lesen und Anhänge herunterladen.',
+    type: 'success',
+    createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+    read: true,
+  },
+  {
+    id: 'notif_3',
+    userId: 'usr_phillip_dev',
+    title: 'Willkommen im Admin-System',
+    message: 'Als Entwickler Phillip Dev kannst du Registrierungsanfragen freischalten und Konten verifizieren.',
+    type: 'info',
+    createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
+    read: true,
+  },
+  {
+    id: 'notif_4',
+    userId: 'usr_sarah_pending',
+    title: 'Registrierung eingegangen',
+    message: 'Deine Anmeldeanforderung wartet auf Freischaltung durch Phillip Dev.',
+    type: 'warning',
+    createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+    read: false,
+  },
+];
+
+// Seed comments
+const SEED_COMMENTS: Comment[] = [
+  {
+    id: 'comm_1',
+    postId: 'post_1',
+    authorId: 'usr_alex_approved',
+    authorName: 'Alex Rivers',
+    authorRank: 'creator',
+    authorIsVerified: true,
+    content: 'Klasse Update! Die neue Architektur v2.4 sieht extrem sauber aus.',
+    createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+  },
+  {
+    id: 'comm_2',
+    postId: 'post_1',
+    authorId: 'usr_phillip_dev',
+    authorName: 'Phillip Dev',
+    authorRank: 'admin',
+    authorIsVerified: true,
+    content: 'Vielen Dank Alex! Bei Fragen zu den Microservice templates stehe ich gerne zur Verfügung.',
+    createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+  },
+];
+
+// Seed app events & updates
+const SEED_APP_EVENTS: AppEvent[] = [
+  {
+    id: 'ev_1',
+    title: 'Benachrichtigungen & Events System',
+    description: 'Neues Benachrichtigungssystem für Kontostatus-Updates sowie ein öffentlicher Event-Log für System-Ankündigungen.',
+    category: 'added',
+    date: new Date().toISOString(),
+    version: 'v2.7.0',
+  },
+  {
+    id: 'ev_2',
+    title: 'Blauer Haken & Verifizierung',
+    description: 'Phillip Dev kann Benutzern nun ein offizielles Verifizierungsabzeichen (blauer Haken) erteilen.',
+    category: 'added',
+    date: new Date(Date.now() - 86400000 * 1).toISOString(),
+    version: 'v2.6.0',
+  },
+  {
+    id: 'ev_3',
+    title: 'Zweisprachigkeit DE / EN',
+    description: 'Vollständige deutsche und englische Lokalisierung der Benutzeroberfläche und Systemnachrichten.',
+    category: 'added',
+    date: new Date(Date.now() - 86400000 * 3).toISOString(),
+    version: 'v2.5.0',
+  },
+  {
+    id: 'ev_4',
+    title: 'Dateianhänge & Snippet-Editor',
+    description: 'Erweiterung der Beiträge um hochladbare Dateien und interaktive Quelltext-Snippets.',
+    category: 'updated',
+    date: new Date(Date.now() - 86400000 * 5).toISOString(),
+    version: 'v2.4.0',
+  },
+  {
+    id: 'ev_5',
+    title: 'Unverschlüsselte Alt-Schnittstelle entfernt',
+    description: 'Sicherheits-Upgrade: Veraltete Legacy-API-Endpunkte wurden zum Schutz der Benutzerdaten abgeschaltet.',
+    category: 'removed',
+    date: new Date(Date.now() - 86400000 * 7).toISOString(),
+    version: 'v2.3.0',
+  },
 ];
 
 // Initialize LocalStorage if not present
@@ -210,6 +350,7 @@ export function initializeStorage(): void {
       users.forEach(u => {
         if (u.username.toLowerCase().replace(/\s+/g, '') === 'phillipdev') {
           u.passwordHash = 'Ingolstadt 2015';
+          u.isVerified = true;
           updated = true;
         }
       });
@@ -223,6 +364,15 @@ export function initializeStorage(): void {
   }
   if (!safeGetItem(BOOKMARKS_KEY)) {
     safeSetItem(BOOKMARKS_KEY, JSON.stringify(['post_1']));
+  }
+  if (!safeGetItem(NOTIFICATIONS_KEY)) {
+    safeSetItem(NOTIFICATIONS_KEY, JSON.stringify(SEED_NOTIFICATIONS));
+  }
+  if (!safeGetItem(APP_EVENTS_KEY)) {
+    safeSetItem(APP_EVENTS_KEY, JSON.stringify(SEED_APP_EVENTS));
+  }
+  if (!safeGetItem(COMMENTS_KEY)) {
+    safeSetItem(COMMENTS_KEY, JSON.stringify(SEED_COMMENTS));
   }
   if (!safeGetItem(CURRENT_USER_KEY)) {
     // Default to Phillip Dev for convenience or logged out
@@ -329,6 +479,99 @@ export function loginUser(usernameOrEmail: string, password: string): { success:
   return { success: true, user: safeUser };
 }
 
+// Notifications Management
+export function getAllNotifications(): UserNotification[] {
+  const raw = safeGetItem(NOTIFICATIONS_KEY);
+  if (!raw) return SEED_NOTIFICATIONS;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return SEED_NOTIFICATIONS;
+  }
+}
+
+export function getNotifications(userId?: string): UserNotification[] {
+  const all = getAllNotifications();
+  if (!userId) return all;
+  return all.filter(n => n.userId === userId);
+}
+
+export function addNotification(
+  userId: string,
+  title: string,
+  message: string,
+  type: 'info' | 'success' | 'warning' | 'badge'
+): UserNotification {
+  const all = getAllNotifications();
+  const newNotif: UserNotification = {
+    id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    userId,
+    title: title.trim(),
+    message: message.trim(),
+    type,
+    createdAt: new Date().toISOString(),
+    read: false,
+  };
+  all.unshift(newNotif);
+  safeSetItem(NOTIFICATIONS_KEY, JSON.stringify(all));
+  return newNotif;
+}
+
+export function markNotificationRead(notificationId: string): void {
+  const all = getAllNotifications();
+  const target = all.find(n => n.id === notificationId);
+  if (target) {
+    target.read = true;
+    safeSetItem(NOTIFICATIONS_KEY, JSON.stringify(all));
+  }
+}
+
+export function markAllNotificationsRead(userId: string): void {
+  const all = getAllNotifications();
+  all.forEach(n => {
+    if (n.userId === userId) {
+      n.read = true;
+    }
+  });
+  safeSetItem(NOTIFICATIONS_KEY, JSON.stringify(all));
+}
+
+export function clearNotifications(userId: string): void {
+  const all = getAllNotifications().filter(n => n.userId !== userId);
+  safeSetItem(NOTIFICATIONS_KEY, JSON.stringify(all));
+}
+
+// App Events Management (Updates & Timeline)
+export function getAppEvents(): AppEvent[] {
+  const raw = safeGetItem(APP_EVENTS_KEY);
+  if (!raw) return SEED_APP_EVENTS;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return SEED_APP_EVENTS;
+  }
+}
+
+export function addAppEvent(
+  title: string,
+  description: string,
+  category: 'added' | 'removed' | 'updated' | 'announcement',
+  version?: string
+): AppEvent {
+  const events = getAppEvents();
+  const newEv: AppEvent = {
+    id: `ev_${Date.now()}`,
+    title: title.trim(),
+    description: description.trim(),
+    category,
+    date: new Date().toISOString(),
+    version: version?.trim() || `v2.${events.length + 3}.0`,
+  };
+  events.unshift(newEv);
+  safeSetItem(APP_EVENTS_KEY, JSON.stringify(events));
+  return newEv;
+}
+
 // Release / Approve a pending user (Phillip Dev action)
 export function releaseUser(userId: string): boolean {
   const users = getUsersWithPasswords();
@@ -337,7 +580,46 @@ export function releaseUser(userId: string): boolean {
 
   users[index].status = 'approved';
   safeSetItem(USERS_KEY, JSON.stringify(users));
+
+  // Dispatch notification
+  addNotification(
+    userId,
+    'Konto freigeschaltet!',
+    'Dein Konto wurde von Phillip Dev freigeschaltet. Du hast nun vollen Zugriff auf Downloads und Lesezeichen.',
+    'success'
+  );
+
   return true;
+}
+
+// Toggle Blue Checkmark / Verified status for a user (Phillip Dev action)
+export function toggleVerifyUser(userId: string): { success: boolean; isVerified: boolean } {
+  const users = getUsersWithPasswords();
+  const index = users.findIndex(u => u.id === userId);
+  if (index === -1) return { success: false, isVerified: false };
+
+  const nextVerified = !users[index].isVerified;
+  users[index].isVerified = nextVerified;
+  safeSetItem(USERS_KEY, JSON.stringify(users));
+
+  // Dispatch notification
+  if (nextVerified) {
+    addNotification(
+      userId,
+      'Du hast den blauen Haken erhalten!',
+      'Dein Konto wurde offiziell von Phillip Dev verifiziert. Ein blauer Haken wird nun neben deinem Profilnamen angezeigt.',
+      'badge'
+    );
+  } else {
+    addNotification(
+      userId,
+      'Verifizierungsstatus geändert',
+      'Dein blauer Haken wurde von Phillip Dev aktualisiert.',
+      'info'
+    );
+  }
+
+  return { success: true, isVerified: nextVerified };
 }
 
 // Reject / Revoke a user (Phillip Dev action)
@@ -346,6 +628,200 @@ export function removeUser(userId: string): boolean {
   users = users.filter(u => u.id !== userId);
   safeSetItem(USERS_KEY, JSON.stringify(users));
   return true;
+}
+
+// Get user by ID
+export function getUserById(userId: string): User | null {
+  const users = getUsers();
+  return users.find(u => u.id === userId) || null;
+}
+
+// Update User Rank (Phillip Dev / Admin action)
+export function updateUserRank(userId: string, newRank: UserRank): { success: boolean; rank: UserRank } {
+  const users = getUsersWithPasswords();
+  const index = users.findIndex(u => u.id === userId);
+  if (index === -1) return { success: false, rank: 'not_granted' };
+
+  users[index].rank = newRank;
+  safeSetItem(USERS_KEY, JSON.stringify(users));
+
+  // Friendly label mapping for notifications
+  const rankLabels: Record<UserRank, string> = {
+    not_granted: 'Nicht gewährt / Not granted',
+    normal: 'Normal',
+    creator: 'Creator',
+    developer: 'Developer',
+    admin: 'Admin',
+  };
+
+  addNotification(
+    userId,
+    'Rang aktualisiert',
+    `Dein Rang wurde von Phillip Dev auf "${rankLabels[newRank]}" geändert.`,
+    'badge'
+  );
+
+  return { success: true, rank: newRank };
+}
+
+// Update User Bio
+export function updateUserBio(userId: string, bio: string): boolean {
+  const users = getUsersWithPasswords();
+  const index = users.findIndex(u => u.id === userId);
+  if (index === -1) return false;
+
+  users[index].bio = bio.trim();
+  safeSetItem(USERS_KEY, JSON.stringify(users));
+
+  // If current user is updated, refresh current user session
+  const currentUser = getCurrentUser();
+  if (currentUser && currentUser.id === userId) {
+    currentUser.bio = bio.trim();
+    setCurrentUser(currentUser);
+  }
+
+  return true;
+}
+
+// Update User Avatar URL
+export function updateUserAvatar(userId: string, avatarUrl: string): boolean {
+  const users = getUsersWithPasswords();
+  const index = users.findIndex(u => u.id === userId);
+  if (index === -1) return false;
+
+  users[index].avatarUrl = avatarUrl;
+  const success = safeSetItem(USERS_KEY, JSON.stringify(users));
+
+  const currentUser = getCurrentUser();
+  if (currentUser && currentUser.id === userId) {
+    currentUser.avatarUrl = avatarUrl;
+    setCurrentUser(currentUser);
+  }
+
+  return success;
+}
+
+// Friend Requests & Relationships
+export function getFriendStatus(fromUserId: string, toUserId: string): 'self' | 'friends' | 'pending_sent' | 'pending_received' | 'none' {
+  if (fromUserId === toUserId) return 'self';
+  const users = getUsers();
+  const fromUser = users.find(u => u.id === fromUserId);
+  const toUser = users.find(u => u.id === toUserId);
+
+  if (!fromUser || !toUser) return 'none';
+
+  if (fromUser.friends?.includes(toUserId)) return 'friends';
+  if (fromUser.friendRequestsSent?.includes(toUserId)) return 'pending_sent';
+  if (fromUser.friendRequestsReceived?.includes(toUserId)) return 'pending_received';
+
+  return 'none';
+}
+
+export function sendFriendRequest(fromUserId: string, toUserId: string): { success: boolean; error?: string } {
+  if (fromUserId === toUserId) return { success: false, error: 'Cannot add yourself.' };
+  const users = getUsersWithPasswords();
+
+  const fromIndex = users.findIndex(u => u.id === fromUserId);
+  const toIndex = users.findIndex(u => u.id === toUserId);
+
+  if (fromIndex === -1 || toIndex === -1) return { success: false, error: 'User not found.' };
+
+  const fromUser = users[fromIndex];
+  const toUser = users[toIndex];
+
+  // Initialize arrays if missing
+  fromUser.friendRequestsSent = fromUser.friendRequestsSent || [];
+  toUser.friendRequestsReceived = toUser.friendRequestsReceived || [];
+
+  if (fromUser.friendRequestsSent.includes(toUserId)) {
+    return { success: false, error: 'Request already sent.' };
+  }
+
+  if (fromUser.friends?.includes(toUserId)) {
+    return { success: false, error: 'Already friends.' };
+  }
+
+  fromUser.friendRequestsSent.push(toUserId);
+  toUser.friendRequestsReceived.push(fromUserId);
+
+  safeSetItem(USERS_KEY, JSON.stringify(users));
+
+  // Notify recipient
+  addNotification(
+    toUserId,
+    'Neue Freundschaftsanfrage',
+    `${fromUser.username} hat dir eine Freundschaftsanfrage gesendet.`,
+    'info'
+  );
+
+  return { success: true };
+}
+
+export function acceptFriendRequest(userId: string, requesterId: string): { success: boolean } {
+  const users = getUsersWithPasswords();
+
+  const uIndex = users.findIndex(u => u.id === userId);
+  const rIndex = users.findIndex(u => u.id === requesterId);
+
+  if (uIndex === -1 || rIndex === -1) return { success: false };
+
+  const user = users[uIndex];
+  const requester = users[rIndex];
+
+  user.friends = user.friends || [];
+  requester.friends = requester.friends || [];
+
+  if (!user.friends.includes(requesterId)) user.friends.push(requesterId);
+  if (!requester.friends.includes(userId)) requester.friends.push(userId);
+
+  user.friendRequestsReceived = (user.friendRequestsReceived || []).filter(id => id !== requesterId);
+  requester.friendRequestsSent = (requester.friendRequestsSent || []).filter(id => id !== userId);
+
+  safeSetItem(USERS_KEY, JSON.stringify(users));
+
+  // Notify requester
+  addNotification(
+    requesterId,
+    'Freundschaftsanfrage angenommen!',
+    `${user.username} hat deine Freundschaftsanfrage angenommen.`,
+    'success'
+  );
+
+  return { success: true };
+}
+
+export function declineFriendRequest(userId: string, requesterId: string): { success: boolean } {
+  const users = getUsersWithPasswords();
+
+  const uIndex = users.findIndex(u => u.id === userId);
+  const rIndex = users.findIndex(u => u.id === requesterId);
+
+  if (uIndex !== -1) {
+    users[uIndex].friendRequestsReceived = (users[uIndex].friendRequestsReceived || []).filter(id => id !== requesterId);
+  }
+  if (rIndex !== -1) {
+    users[rIndex].friendRequestsSent = (users[rIndex].friendRequestsSent || []).filter(id => id !== userId);
+  }
+
+  safeSetItem(USERS_KEY, JSON.stringify(users));
+  return { success: true };
+}
+
+export function removeFriend(userId1: string, userId2: string): { success: boolean } {
+  const users = getUsersWithPasswords();
+
+  const idx1 = users.findIndex(u => u.id === userId1);
+  const idx2 = users.findIndex(u => u.id === userId2);
+
+  if (idx1 !== -1) {
+    users[idx1].friends = (users[idx1].friends || []).filter(id => id !== userId2);
+  }
+  if (idx2 !== -1) {
+    users[idx2].friends = (users[idx2].friends || []).filter(id => id !== userId1);
+  }
+
+  safeSetItem(USERS_KEY, JSON.stringify(users));
+  return { success: true };
 }
 
 // Post Management
@@ -359,12 +835,17 @@ export function getPosts(): Post[] {
   }
 }
 
-export function createPost(title: string, content: string, attachments: FileAttachment[], tags: string[]): Post {
+export function createPost(title: string, content: string, attachments: FileAttachment[], tags: string[], author?: User | null): Post {
   const posts = getPosts();
+  const authorUser = author || {
+    id: 'usr_phillip_dev',
+    username: 'Phillip Dev',
+  };
+
   const newPost: Post = {
     id: `post_${Date.now()}`,
-    authorId: 'usr_phillip_dev',
-    authorName: 'Phillip Dev',
+    authorId: authorUser.id,
+    authorName: authorUser.username,
     title: title.trim(),
     content: content.trim(),
     createdAt: new Date().toISOString(),
@@ -375,6 +856,19 @@ export function createPost(title: string, content: string, attachments: FileAtta
   posts.unshift(newPost);
   safeSetItem(POSTS_KEY, JSON.stringify(posts));
   return newPost;
+}
+
+export function deletePost(postId: string): boolean {
+  const posts = getPosts();
+  const updatedPosts = posts.filter(p => p.id !== postId);
+  safeSetItem(POSTS_KEY, JSON.stringify(updatedPosts));
+
+  // Also remove comments associated with this post
+  const comments = getComments();
+  const updatedComments = comments.filter(c => c.postId !== postId);
+  safeSetItem(COMMENTS_KEY, JSON.stringify(updatedComments));
+
+  return true;
 }
 
 // Increment download count
@@ -411,5 +905,182 @@ export function toggleBookmark(userId: string, postId: string): string[] {
   }
   safeSetItem(`${BOOKMARKS_KEY}_${userId}`, JSON.stringify(updated));
   return updated;
+}
+
+// Comments Management
+export function getComments(postId?: string): Comment[] {
+  const raw = safeGetItem(COMMENTS_KEY);
+  let all: Comment[] = [];
+  if (!raw) {
+    all = SEED_COMMENTS;
+  } else {
+    try {
+      all = JSON.parse(raw);
+    } catch {
+      all = SEED_COMMENTS;
+    }
+  }
+  if (postId) {
+    return all.filter(c => c.postId === postId);
+  }
+  return all;
+}
+
+export function createComment(postId: string, author: User, content: string): Comment {
+  const comments = getComments();
+  const newComment: Comment = {
+    id: `comm_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    postId,
+    authorId: author.id,
+    authorName: author.username,
+    authorRank: author.rank || 'normal',
+    authorIsVerified: author.isVerified || false,
+    content: content.trim(),
+    createdAt: new Date().toISOString(),
+  };
+
+  comments.push(newComment);
+  safeSetItem(COMMENTS_KEY, JSON.stringify(comments));
+
+  // Create notification for post author if different
+  const posts = getPosts();
+  const post = posts.find(p => p.id === postId);
+  if (post && post.authorId !== author.id) {
+    addNotification(
+      post.authorId,
+      'Neuer Kommentar',
+      `${author.username} hat deinen Beitrag "${post.title.slice(0, 25)}..." kommentiert.`,
+      'info'
+    );
+  }
+
+  return newComment;
+}
+
+export function deleteComment(commentId: string): boolean {
+  const comments = getComments();
+  const updated = comments.filter(c => c.id !== commentId);
+  safeSetItem(COMMENTS_KEY, JSON.stringify(updated));
+  return true;
+}
+
+// Permissions Helpers
+export function isFullAdmin(user: User | null): boolean {
+  if (!user) return false;
+  const isDevUsername = user.username.toLowerCase().replace(/\s+/g, '') === 'phillipdev';
+  return user.role === 'admin' || user.rank === 'admin' || isDevUsername;
+}
+
+export function isDeveloper(user: User | null): boolean {
+  if (!user) return false;
+  return isFullAdmin(user) || user.rank === 'developer';
+}
+
+export function canApproveUsers(user: User | null): boolean {
+  return isDeveloper(user); // Both developers and admins can approve/release users
+}
+
+export function canCreateMainPost(user: User | null): boolean {
+  if (!user || user.status !== 'approved') return false;
+  return isDeveloper(user) || isFullAdmin(user);
+}
+
+export function canCreateCreatorPost(user: User | null): boolean {
+  if (!user || user.status !== 'approved') return false;
+  return user.rank === 'creator' || user.rank === 'developer' || isFullAdmin(user);
+}
+
+export function canCreatePost(user: User | null): boolean {
+  return canCreateMainPost(user) || canCreateCreatorPost(user);
+}
+
+export function canDeletePost(user: User | null, postAuthorId: string): boolean {
+  if (!user) return false;
+  return isFullAdmin(user) || user.id === postAuthorId;
+}
+
+export function canDeleteComment(user: User | null, commentAuthorId: string): boolean {
+  if (!user) return false;
+  return isFullAdmin(user) || isDeveloper(user) || user.id === commentAuthorId;
+}
+
+// Creator Tab Helpers & Functions
+export function getCreatorPosts(): Post[] {
+  const posts = getPosts();
+  return posts.filter(p => p.isCreatorTabPost);
+}
+
+export function createCreatorPost(title: string, content: string, attachments: FileAttachment[], tags: string[], rating: number, author: User): Post {
+  const posts = getPosts();
+  const newPost: Post = {
+    id: `post_creator_${Date.now()}`,
+    authorId: author.id,
+    authorName: author.username,
+    title: title.trim(),
+    content: content.trim(),
+    createdAt: new Date().toISOString(),
+    tags: tags.length ? tags : ['Creator'],
+    attachments,
+    isCreatorTabPost: true,
+    rating: Math.min(5, Math.max(1, rating)),
+    status: 'approved', // Published immediately without pending review
+    likes: [],
+  };
+
+  posts.unshift(newPost);
+  safeSetItem(POSTS_KEY, JSON.stringify(posts));
+
+  return newPost;
+}
+
+export function approveCreatorPost(postId: string): boolean {
+  const posts = getPosts();
+  const post = posts.find(p => p.id === postId);
+  if (post) {
+    post.status = 'approved';
+    safeSetItem(POSTS_KEY, JSON.stringify(posts));
+
+    addNotification(
+      post.authorId,
+      'Creator-Beitrag freigeschaltet!',
+      `Dein Beitrag "${post.title.slice(0, 25)}..." wurde von Phillip Dev im Creator Tab freigeschaltet.`,
+      'success'
+    );
+    return true;
+  }
+  return false;
+}
+
+export function rejectCreatorPost(postId: string): boolean {
+  const posts = getPosts();
+  const post = posts.find(p => p.id === postId);
+  if (post) {
+    const updated = posts.filter(p => p.id !== postId);
+    safeSetItem(POSTS_KEY, JSON.stringify(updated));
+
+    addNotification(
+      post.authorId,
+      'Creator-Beitrag abgelehnt',
+      `Dein Beitrag "${post.title.slice(0, 25)}..." wurde von Phillip Dev abgelehnt.`,
+      'warning'
+    );
+    return true;
+  }
+  return false;
+}
+
+export function toggleLikePost(postId: string, userId: string): Post[] {
+  const posts = getPosts();
+  const post = posts.find(p => p.id === postId);
+  if (post) {
+    const likes = post.likes || [];
+    if (likes.includes(userId)) {
+      post.likes = likes.filter(id => id !== userId);
+    } else {
+      post.likes = [...likes, userId];
+    }
+    safeSetItem(POSTS_KEY, JSON.stringify(posts));
+  }
+  return posts;
 }
 
