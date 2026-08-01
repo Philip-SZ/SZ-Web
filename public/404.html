@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <title>SZ Portal - Jeden Tag neue Nachrichten</title>
+    <script type="text/javascript">
+      // Single Page Apps for GitHub Pages
+      // https://github.com/rafgraph/spa-github-pages
+      var segmentCount = 1;
+      var l = window.location;
+      var path = l.pathname.split('/').slice(1, 1 + segmentCount).join('/');
+      var search = l.search ? l.search : '';
+      var hash = l.hash ? l.hash : '';
+      var rest = l.pathname.split('/').slice(1 + segmentCount).join('/');
+      var newUrl = l.protocol + '//' + l.host + '/' + path + '/?/' + rest + (search ? '&' + search.slice(1) : '') + hash;
+      window.location.replace(newUrl);
+    </script>
+  </head>
+  <body></body>
+</html>
