@@ -20,9 +20,11 @@ export const LoginRegisterModal: React.FC<LoginRegisterModalProps> = ({ isOpen, 
   const [loginPassword, setLoginPassword] = useState('');
 
   // Register form
+  const [regFullName, setRegFullName] = useState('');
   const [regUsername, setRegUsername] = useState('');
-  const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
+  const [regConfirmPassword, setRegConfirmPassword] = useState('');
+  const [regEmail, setRegEmail] = useState('');
 
   const [error, setError] = useState<string | null>(null);
   const [successInfo, setSuccessInfo] = useState<string | null>(null);
@@ -48,15 +50,20 @@ export const LoginRegisterModal: React.FC<LoginRegisterModalProps> = ({ isOpen, 
     setError(null);
     setSuccessInfo(null);
 
-    if (!regUsername || !regPassword) {
+    if (!regFullName || !regUsername || !regPassword || !regConfirmPassword) {
       setError(isDe ? 'Bitte alle erforderlichen Felder ausfüllen.' : 'Please fill in all required fields.');
       return;
     }
 
-    const res = registerUser(regUsername, regEmail || `${regUsername.toLowerCase().replace(/\s+/g, '')}@example.com`, regPassword);
+    if (regPassword !== regConfirmPassword) {
+      setError(isDe ? 'Die Passwörter stimmen nicht überein.' : 'Passwords do not match.');
+      return;
+    }
+
+    const res = registerUser(regFullName, regUsername, regPassword, regConfirmPassword, regEmail);
     if (res.success && res.user) {
       if (res.user.status === 'pending') {
-        setSuccessInfo(isDe ? 'Registrierung eingereicht.' : 'Registration submitted.');
+        setSuccessInfo(isDe ? 'Registrierung eingereicht. Warte auf Freigabe.' : 'Registration submitted. Pending approval.');
         setTimeout(() => {
           onSuccess(res.user!);
           onClose();
@@ -173,26 +180,29 @@ export const LoginRegisterModal: React.FC<LoginRegisterModalProps> = ({ isOpen, 
             <form onSubmit={handleRegister} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  {isDe ? 'Nutzername' : 'Username'}
+                  {isDe ? 'Vollständiger Name' : 'Full Name'}
                 </label>
                 <input
                   type="text"
-                  value={regUsername}
-                  onChange={(e) => setRegUsername(e.target.value)}
-                  placeholder={isDe ? 'Nutzername' : 'Username'}
+                  value={regFullName}
+                  onChange={(e) => setRegFullName(e.target.value)}
+                  placeholder={isDe ? 'Max Mustermann' : 'John Doe'}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">E-Mail</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  {isDe ? 'Benutzername' : 'Username'}
+                </label>
                 <input
-                  type="email"
-                  value={regEmail}
-                  onChange={(e) => setRegEmail(e.target.value)}
-                  placeholder="E-Mail"
+                  type="text"
+                  value={regUsername}
+                  onChange={(e) => setRegUsername(e.target.value)}
+                  placeholder={isDe ? 'maxdev' : 'johndoe'}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors"
+                  required
                 />
               </div>
 
@@ -204,9 +214,36 @@ export const LoginRegisterModal: React.FC<LoginRegisterModalProps> = ({ isOpen, 
                   type="password"
                   value={regPassword}
                   onChange={(e) => setRegPassword(e.target.value)}
-                  placeholder={isDe ? 'Passwort' : 'Password'}
+                  placeholder={isDe ? 'Passwort eingeben' : 'Enter password'}
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors"
                   required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  {isDe ? 'Passwort wiederholen' : 'Repeat Password'}
+                </label>
+                <input
+                  type="password"
+                  value={regConfirmPassword}
+                  onChange={(e) => setRegConfirmPassword(e.target.value)}
+                  placeholder={isDe ? 'Passwort wiederholen' : 'Repeat password'}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  {isDe ? 'E-Mail-Adresse (optional, zum Zurücksetzen des Passworts)' : 'Email address (optional, for password reset)'}
+                </label>
+                <input
+                  type="email"
+                  value={regEmail}
+                  onChange={(e) => setRegEmail(e.target.value)}
+                  placeholder="name@example.com"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-indigo-500 transition-colors"
                 />
               </div>
 

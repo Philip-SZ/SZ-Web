@@ -1,6 +1,6 @@
 import React from 'react';
 import { UserRank } from '../types';
-import { Crown, Terminal, Sparkles, User as UserIcon, Lock } from 'lucide-react';
+import { Crown, Terminal, Sparkles, ShieldCheck, User as UserIcon, Lock } from 'lucide-react';
 
 interface UserRankBadgeProps {
   rank?: UserRank;
@@ -30,6 +30,12 @@ export const UserRankBadge: React.FC<UserRankBadgeProps> = ({
           label: isDe ? 'Entwickler' : 'Developer',
           icon: <Terminal className={size === 'sm' ? 'w-3 h-3' : size === 'md' ? 'w-3.5 h-3.5' : 'w-4 h-4'} />,
           classes: 'bg-sky-500/20 text-sky-300 border-sky-500/30',
+        };
+      case 'supporter':
+        return {
+          label: isDe ? 'Supporter' : 'Supporter',
+          icon: <ShieldCheck className={size === 'sm' ? 'w-3 h-3' : size === 'md' ? 'w-3.5 h-3.5' : 'w-4 h-4'} />,
+          classes: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
         };
       case 'creator':
         return {

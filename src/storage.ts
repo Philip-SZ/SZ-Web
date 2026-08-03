@@ -1,4 +1,4 @@
-import { User, UserRank, Post, FileAttachment, UserNotification, AppEvent, Comment } from './types';
+import { User, UserRank, Post, FileAttachment, UserNotification, AppEvent, Comment, CreatorApplication, SupporterApplication } from './types';
 
 const USERS_KEY = 'phillip_dev_portal_users';
 const POSTS_KEY = 'phillip_dev_portal_posts';
@@ -423,21 +423,42 @@ export function setCurrentUser(user: User | null): void {
 }
 
 // Register a new user (always pending release)
-export function registerUser(username: string, email: string, password: string): { success: boolean; user?: User; error?: string } {
+export function registerUser(
+  fullName: string,
+  username: string,
+  password: string,
+  confirmPassword: string,
+  email?: string
+): { success: boolean; user?: User; error?: string } {
   const users = getUsersWithPasswords();
-  const trimmedName = username.trim();
-  const trimmedEmail = email.trim().toLowerCase();
+  const trimmedFullName = fullName.trim();
+  const trimmedUsername = username.trim();
+  const trimmedEmail = email ? email.trim().toLowerCase() : `${trimmedUsername.toLowerCase().replace(/\s+/g, '')}@example.com`;
 
-  if (users.some(u => u.username.toLowerCase() === trimmedName.toLowerCase())) {
-    return { success: false, error: 'A user with this username already exists.' };
+  if (!trimmedFullName) {
+    return { success: false, error: 'Bitte gib deinen vollständigen Namen ein.' };
+  }
+  if (!trimmedUsername) {
+    return { success: false, error: 'Bitte gib einen Benutzernamen ein.' };
+  }
+  if (!password) {
+    return { success: false, error: 'Bitte gib ein Passwort ein.' };
+  }
+  if (password !== confirmPassword) {
+    return { success: false, error: 'Die Passwörter stimmen nicht überein.' };
+  }
+
+  if (users.some(u => u.username.toLowerCase() === trimmedUsername.toLowerCase())) {
+    return { success: false, error: 'Ein Benutzer mit diesem Benutzernamen existiert bereits.' };
   }
 
   // Check if registering as Phillip Dev
-  const isPhillipDev = trimmedName.toLowerCase().replace(/\s+/g, '') === 'phillipdev';
+  const isPhillipDev = trimmedUsername.toLowerCase().replace(/\s+/g, '') === 'phillipdev';
 
   const newUser: User & { passwordHash: string } = {
     id: `usr_${Date.now()}`,
-    username: trimmedName,
+    fullName: trimmedFullName,
+    username: trimmedUsername,
     email: trimmedEmail,
     role: isPhillipDev ? 'admin' : 'user',
     status: isPhillipDev ? 'approved' : 'pending', // Only Phillip Dev is auto-approved, regular users are PENDING
@@ -650,6 +671,7 @@ export function updateUserRank(userId: string, newRank: UserRank): { success: bo
     not_granted: 'Nicht gewährt / Not granted',
     normal: 'Normal',
     creator: 'Creator',
+    supporter: 'Supporter',
     developer: 'Developer',
     admin: 'Admin',
   };
@@ -976,6 +998,11 @@ export function isDeveloper(user: User | null): boolean {
   return isFullAdmin(user) || user.rank === 'developer';
 }
 
+export function isSupporter(user: User | null): boolean {
+  if (!user) return false;
+  return isDeveloper(user) || user.rank === 'supporter';
+}
+
 export function canApproveUsers(user: User | null): boolean {
   return isDeveloper(user); // Both developers and admins can approve/release users
 }
@@ -996,7 +1023,60 @@ export function canCreatePost(user: User | null): boolean {
 
 export function canDeletePost(user: User | null, postAuthorId: string): boolean {
   if (!user) return false;
-  return isFullAdmin(user) || user.id === postAuthorId;
+  return isFullAdmin(user) || isDeveloper(user) || isSupporter(user) || user.id === postAuthorId;
+}
+
+export function reportPost(postId: string, userId: string, username: string, reason: string): { success: boolean; error?: string } {
+  const posts = getPosts();
+  const post = posts.find(p => p.id === postId);
+  if (!post) return { success: false, error: 'Post not found.' };
+
+  if (!post.reports) {
+    post.reports = [];
+  }
+
+  if (post.reports.some(r => r.userId === userId)) {
+    return { success: false, error: 'Du hast diesen Beitrag bereits gemeldet.' };
+  }
+
+  post.reports.push({
+    userId,
+    username,
+    reason: reason.trim() || 'Unangemessener Inhalt',
+    createdAt: new Date().toISOString(),
+  });
+
+  safeSetItem(POSTS_KEY, JSON.stringify(posts));
+
+  // Notify supporters, developers, and admins
+  const users = getUsers();
+  users.forEach(u => {
+    if (isSupporter(u) || isDeveloper(u) || isFullAdmin(u)) {
+      addNotification(
+        u.id,
+        'Beitrag gemeldet',
+        `Ein Beitrag ("${post.title.slice(0, 20)}...") wurde von ${username} gemeldet (${post.reports?.length || 1} Meldungen). Bitte im Support-Channel prüfen.`,
+        'warning'
+      );
+    }
+  });
+
+  return { success: true };
+}
+
+export function dismissPostReports(postId: string): boolean {
+  const posts = getPosts();
+  const post = posts.find(p => p.id === postId);
+  if (!post) return false;
+
+  post.reports = [];
+  safeSetItem(POSTS_KEY, JSON.stringify(posts));
+  return true;
+}
+
+export function getReportedPosts(): Post[] {
+  const posts = getPosts();
+  return posts.filter(p => p.reports && p.reports.length > 0);
 }
 
 export function canDeleteComment(user: User | null, commentAuthorId: string): boolean {
@@ -1083,4 +1163,216 @@ export function toggleLikePost(postId: string, userId: string): Post[] {
   }
   return posts;
 }
+
+// Creator Applications & Survey Management
+const CREATOR_APPLICATIONS_KEY = 'phillip_dev_portal_creator_applications';
+
+export function getCreatorApplications(): CreatorApplication[] {
+  const raw = safeGetItem(CREATOR_APPLICATIONS_KEY);
+  if (!raw) {
+    const seed: CreatorApplication[] = [
+      {
+        id: 'capp_1',
+        userId: 'usr_alex_approved',
+        username: 'Alex Johnson',
+        email: 'alex@example.com',
+        reason: 'Ich möchte Einblicke in Softwarearchitektur und Event-Driven Systeme geben.',
+        topics: 'Microservices, TypeScript, Systemdesign',
+        createdAt: new Date(Date.now() - 3600000 * 24).toISOString(),
+        status: 'approved',
+      }
+    ];
+    safeSetItem(CREATOR_APPLICATIONS_KEY, JSON.stringify(seed));
+    return seed;
+  }
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+export function submitCreatorApplication(userId: string, username: string, email: string, reason: string, topics: string): CreatorApplication {
+  const apps = getCreatorApplications();
+  const newApp: CreatorApplication = {
+    id: `capp_${Date.now()}`,
+    userId,
+    username,
+    email,
+    reason: reason.trim(),
+    topics: topics.trim(),
+    createdAt: new Date().toISOString(),
+    status: 'pending',
+  };
+  apps.unshift(newApp);
+  safeSetItem(CREATOR_APPLICATIONS_KEY, JSON.stringify(apps));
+
+  // Notify all supporters, developers, and admins
+  const users = getUsers();
+  users.forEach(u => {
+    if (isSupporter(u) || isDeveloper(u) || isFullAdmin(u)) {
+      addNotification(
+        u.id,
+        'Neue Creator-Bewerbung eingegangen',
+        `${username} möchte Creator werden und hat eine Bewerbung eingereicht, um Beiträge zu schreiben.`,
+        'info'
+      );
+    }
+  });
+
+  return newApp;
+}
+
+export function approveCreatorApplication(appId: string): boolean {
+  const apps = getCreatorApplications();
+  const app = apps.find(a => a.id === appId);
+  if (!app) return false;
+
+  app.status = 'approved';
+  safeSetItem(CREATOR_APPLICATIONS_KEY, JSON.stringify(apps));
+
+  updateUserRank(app.userId, 'creator');
+
+  addNotification(
+    app.userId,
+    'Creator-Bewerbung angenommen!',
+    'Deine Bewerbung als Creator wurde freigeschaltet. Du kannst nun exklusive Creator-Beiträge veröffentlichen!',
+    'success'
+  );
+
+  return true;
+}
+
+export function rejectCreatorApplication(appId: string): boolean {
+  const apps = getCreatorApplications();
+  const app = apps.find(a => a.id === appId);
+  if (!app) return false;
+
+  app.status = 'rejected';
+  safeSetItem(CREATOR_APPLICATIONS_KEY, JSON.stringify(apps));
+
+  addNotification(
+    app.userId,
+    'Creator-Bewerbung abgelehnt',
+    'Deine Bewerbung als Creator wurde leider abgelehnt.',
+    'warning'
+  );
+
+  return true;
+}
+
+export function sendCreatorSurveyToUsers(): number {
+  const users = getUsers();
+  let count = 0;
+  users.forEach(u => {
+    if (u.status === 'approved' && u.rank !== 'creator' && !isDeveloper(u) && !isFullAdmin(u)) {
+      addNotification(
+        u.id,
+        'Creator-Umfrage & Einladung',
+        'Du wurdest zu einer Creator-Befragung eingeladen! Bewirb dich jetzt, um Artikel und Beiträge im Portal zu veröffentlichen.',
+        'info'
+      );
+      count++;
+    }
+  });
+  return count;
+}
+
+// Supporter Applications Management
+const SUPPORTER_APPLICATIONS_KEY = 'phillip_dev_portal_supporter_applications';
+
+export function getSupporterApplications(): SupporterApplication[] {
+  const raw = safeGetItem(SUPPORTER_APPLICATIONS_KEY);
+  if (!raw) {
+    const seed: SupporterApplication[] = [
+      {
+        id: 'sapp_1',
+        userId: 'usr_sarah_supporter',
+        username: 'Sarah Support',
+        email: 'sarah@example.com',
+        reason: 'Ich möchte dem SZ Portal Team helfen, gemeldete Beiträge zu überprüfen und die Community sicher zu halten.',
+        experience: 'Moderatorin in Communities, sehr hilfsbereit',
+        createdAt: new Date(Date.now() - 3600000 * 12).toISOString(),
+        status: 'approved',
+      }
+    ];
+    safeSetItem(SUPPORTER_APPLICATIONS_KEY, JSON.stringify(seed));
+    return seed;
+  }
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+export function submitSupporterApplication(userId: string, username: string, email: string, reason: string, experience: string): SupporterApplication {
+  const apps = getSupporterApplications();
+  const newApp: SupporterApplication = {
+    id: `sapp_${Date.now()}`,
+    userId,
+    username,
+    email,
+    reason: reason.trim(),
+    experience: experience.trim(),
+    createdAt: new Date().toISOString(),
+    status: 'pending',
+  };
+  apps.unshift(newApp);
+  safeSetItem(SUPPORTER_APPLICATIONS_KEY, JSON.stringify(apps));
+
+  // Notify all supporters, developers, and admins
+  const users = getUsers();
+  users.forEach(u => {
+    if (isSupporter(u) || isDeveloper(u) || isFullAdmin(u)) {
+      addNotification(
+        u.id,
+        'Neue Supporter-Bewerbung eingegangen',
+        `${username} möchte Supporter werden und hat eine Bewerbung eingereicht, um das SZ Portal Team zu unterstützen.`,
+        'info'
+      );
+    }
+  });
+
+  return newApp;
+}
+
+export function approveSupporterApplication(appId: string): boolean {
+  const apps = getSupporterApplications();
+  const app = apps.find(a => a.id === appId);
+  if (!app) return false;
+
+  app.status = 'approved';
+  safeSetItem(SUPPORTER_APPLICATIONS_KEY, JSON.stringify(apps));
+
+  updateUserRank(app.userId, 'supporter');
+
+  addNotification(
+    app.userId,
+    'Supporter-Bewerbung angenommen!',
+    'Deine Bewerbung als Supporter wurde freigeschaltet. Du bist nun offiziell im SZ Portal Team!',
+    'success'
+  );
+
+  return true;
+}
+
+export function rejectSupporterApplication(appId: string): boolean {
+  const apps = getSupporterApplications();
+  const app = apps.find(a => a.id === appId);
+  if (!app) return false;
+
+  app.status = 'rejected';
+  safeSetItem(SUPPORTER_APPLICATIONS_KEY, JSON.stringify(apps));
+
+  addNotification(
+    app.userId,
+    'Supporter-Bewerbung abgelehnt',
+    'Deine Bewerbung als Supporter wurde leider abgelehnt.',
+    'warning'
+  );
+
+  return true;
+}
+
 

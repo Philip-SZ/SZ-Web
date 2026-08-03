@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Post, User, FileAttachment, Comment } from '../types';
-import { Bookmark, Download, Lock, FileText, Code, FileArchive, File, ShieldCheck, Tag, Check, Eye, BadgeCheck, MessageSquare, Send, Trash2, Heart, Star } from 'lucide-react';
-import { recordDownload, toggleBookmark, getUsers, getComments, createComment, deleteComment, canDeleteComment, canDeletePost, deletePost, toggleLikePost } from '../storage';
+import { Bookmark, Download, Lock, FileText, Code, FileArchive, File, ShieldCheck, Tag, Check, Eye, BadgeCheck, MessageSquare, Send, Trash2, Heart, Star, Flag } from 'lucide-react';
+import { recordDownload, toggleBookmark, getUsers, getComments, createComment, deleteComment, canDeleteComment, canDeletePost, deletePost, toggleLikePost, reportPost } from '../storage';
 import { UserRankBadge } from './UserRankBadge';
 
 interface PostCardProps {
@@ -36,6 +36,21 @@ export const PostCard: React.FC<PostCardProps> = ({
   const [commentText, setCommentText] = useState('');
   const [likes, setLikes] = useState<string[]>(post.likes || []);
   const isLiked = currentUser ? likes.includes(currentUser.id) : false;
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+
+  const handleReportPost = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser) return;
+    const res = reportPost(post.id, currentUser.id, currentUser.username, reportReason);
+    if (res.success) {
+      onToast(isDe ? 'Beitrag erfolgreich gemeldet. Danke für deine Mithilfe!' : 'Post reported successfully. Thanks for helping!', 'success');
+      setShowReportModal(false);
+      setReportReason('');
+    } else {
+      onToast(res.error || (isDe ? 'Fehler beim Melden' : 'Error reporting'), 'error');
+    }
+  };
 
   const handleLikeToggle = () => {
     if (!currentUser) {
@@ -433,17 +448,70 @@ export const PostCard: React.FC<PostCardProps> = ({
           </button>
         </div>
 
-        {canDeletePost(currentUser, post.authorId) && (
-          <button
-            onClick={handleDeletePost}
-            className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-950/30 border border-transparent hover:border-rose-800/40 rounded-xl transition-all"
-            title={isDe ? 'Beitrag löschen' : 'Delete post'}
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">{isDe ? 'Löschen' : 'Delete'}</span>
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {currentUser && currentUser.id !== post.authorId && (
+            <button
+              onClick={() => setShowReportModal(true)}
+              className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-amber-400 hover:text-amber-300 hover:bg-amber-950/30 border border-transparent hover:border-amber-800/40 rounded-xl transition-all"
+              title={isDe ? 'Beitrag melden' : 'Report post'}
+            >
+              <Flag className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{isDe ? 'Melden' : 'Report'}</span>
+            </button>
+          )}
+
+          {canDeletePost(currentUser, post.authorId) && (
+            <button
+              onClick={handleDeletePost}
+              className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-950/30 border border-transparent hover:border-rose-800/40 rounded-xl transition-all"
+              title={isDe ? 'Beitrag löschen' : 'Delete post'}
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{isDe ? 'Löschen' : 'Delete'}</span>
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Report Modal */}
+      {showReportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className={`w-full max-w-sm rounded-2xl border p-5 shadow-2xl ${isLight ? 'bg-white border-slate-200 text-slate-800' : 'bg-slate-900 border-slate-800 text-slate-100'}`}>
+            <h4 className="text-sm font-bold mb-2 flex items-center gap-2">
+              <Flag className="w-4 h-4 text-amber-500" />
+              {isDe ? 'Beitrag melden' : 'Report Post'}
+            </h4>
+            <p className="text-xs text-slate-400 mb-3">
+              {isDe ? 'Bitte teile uns mit, warum dieser Beitrag gemeldet werden sollte. Supporter werden dies im Support-Channel prüfen.' : 'Please tell us why this post should be reported. Supporters will review it in the support channel.'}
+            </p>
+            <form onSubmit={handleReportPost} className="space-y-3">
+              <textarea
+                value={reportReason}
+                onChange={(e) => setReportReason(e.target.value)}
+                placeholder={isDe ? 'Grund (z.B. Spam, unangebrachte Inhalte)...' : 'Reason (e.g. spam, inappropriate content)...'}
+                className={`w-full p-3 text-xs rounded-xl border focus:outline-none focus:border-indigo-500 ${isLight ? 'bg-slate-50 border-slate-200 text-slate-800' : 'bg-slate-950 border-slate-800 text-slate-100'}`}
+                rows={3}
+                required
+              />
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowReportModal(false)}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700"
+                >
+                  {isDe ? 'Abbrechen' : 'Cancel'}
+                </button>
+                <button
+                  type="submit"
+                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-600 hover:bg-amber-500 text-white"
+                >
+                  {isDe ? 'Meldung absenden' : 'Submit Report'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Expanded Comment Section */}
       {showComments && (

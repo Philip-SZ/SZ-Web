@@ -2,10 +2,11 @@ export type UserRole = 'admin' | 'user';
 
 export type UserStatus = 'approved' | 'pending';
 
-export type UserRank = 'not_granted' | 'normal' | 'creator' | 'developer' | 'admin';
+export type UserRank = 'not_granted' | 'normal' | 'creator' | 'supporter' | 'developer' | 'admin';
 
 export interface User {
   id: string;
+  fullName?: string;
   username: string;
   email: string;
   role: UserRole;
@@ -29,6 +30,13 @@ export interface FileAttachment {
   downloadCount: number;
 }
 
+export interface PostReport {
+  userId: string;
+  username: string;
+  reason: string;
+  createdAt: string;
+}
+
 export interface Post {
   id: string;
   authorId: string;
@@ -43,6 +51,7 @@ export interface Post {
   rating?: number; // 1 to 5 rating by creator
   status?: 'pending' | 'approved';
   likes?: string[]; // user IDs who liked the post
+  reports?: PostReport[];
 }
 
 export interface Comment {
@@ -78,3 +87,26 @@ export interface AppEvent {
   date: string;
   version?: string;
 }
+
+export interface CreatorApplication {
+  id: string;
+  userId: string;
+  username: string;
+  email: string;
+  reason: string;
+  topics: string;
+  createdAt: string;
+  status: 'pending' | 'approved' | 'rejected';
+}
+
+export interface SupporterApplication {
+  id: string;
+  userId: string;
+  username: string;
+  email: string;
+  reason: string;
+  experience: string;
+  createdAt: string;
+  status: 'pending' | 'approved' | 'rejected';
+}
+

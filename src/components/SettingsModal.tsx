@@ -11,8 +11,10 @@ import {
   RotateCcw,
   Check,
   Sparkles,
-  Sliders
+  Sliders,
+  LogOut
 } from 'lucide-react';
+import { User } from '../types';
 
 export interface AppSettings {
   theme: 'dark' | 'light';
@@ -29,6 +31,8 @@ interface SettingsModalProps {
   onUpdateSettings: (newSettings: Partial<AppSettings>) => void;
   onResetStorage?: () => void;
   onToast?: (msg: string, type?: 'success' | 'error' | 'info') => void;
+  currentUser?: User | null;
+  onLogout?: () => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -38,6 +42,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onUpdateSettings,
   onResetStorage,
   onToast,
+  currentUser,
+  onLogout,
 }) => {
   if (!isOpen) return null;
 
@@ -290,6 +296,37 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       className="px-2.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold rounded-lg transition-colors"
                     >
                       {settings.language === 'de' ? 'Zurücksetzen' : 'Reset'}
+                    </button>
+                  </div>
+                )}
+
+                {/* Logout / Unsubscribe Button */}
+                {currentUser && onLogout && (
+                  <div className={`p-3 rounded-xl border flex items-center justify-between ${
+                    isLight ? 'bg-rose-50 border-rose-200' : 'bg-rose-950/30 border-rose-900/40'
+                  }`}>
+                    <div className="flex items-center gap-2.5">
+                      <LogOut className="w-4 h-4 text-rose-500" />
+                      <div>
+                        <div className="text-xs font-semibold text-rose-400">
+                          {settings.language === 'de' ? 'Abmelden / Konto verlassen' : 'Log out / Unsubscribe'}
+                        </div>
+                        <div className="text-[10px] text-rose-400/80">
+                          {settings.language === 'de' ? `Angemeldet als @${currentUser.username}` : `Signed in as @${currentUser.username}`}
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onLogout();
+                        if (onToast) onToast(settings.language === 'de' ? 'Erfolgreich abgemeldet.' : 'Logged out successfully.', 'info');
+                        onClose();
+                      }}
+                      className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 shadow-md shadow-rose-600/20"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>{settings.language === 'de' ? 'Abmelden' : 'Log Out'}</span>
                     </button>
                   </div>
                 )}

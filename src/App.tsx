@@ -27,8 +27,11 @@ import { EventsPanel } from './components/EventsPanel';
 import { PostCreator } from './components/PostCreator';
 import { CreatorTabPanel } from './components/CreatorTabPanel';
 import { CreatorPostModal } from './components/CreatorPostModal';
+import { CreatorApplicationModal } from './components/CreatorApplicationModal';
+import { SupporterApplicationModal } from './components/SupporterApplicationModal';
 import { SettingsModal } from './components/SettingsModal';
 import { UserProfileModal } from './components/UserProfileModal';
+import { SupportChannelPanel } from './components/SupportChannelPanel';
 import { ToastContainer, ToastMessage } from './components/Toast';
 import { Search, Bookmark, Layers, ShieldCheck, Sparkles, UserCheck, Lock } from 'lucide-react';
 
@@ -42,6 +45,8 @@ export default function App() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isCreatorOpen, setIsCreatorOpen] = useState(false);
   const [isCreatorPostModalOpen, setIsCreatorPostModalOpen] = useState(false);
+  const [isCreatorAppOpen, setIsCreatorAppOpen] = useState(false);
+  const [isSupporterAppOpen, setIsSupporterAppOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [selectedUserForProfile, setSelectedUserForProfile] = useState<User | null>(null);
   const [settings, setSettingsState] = useState<AppSettings>(getSettings());
@@ -141,6 +146,10 @@ export default function App() {
 
   // Filter posts
   const filteredPosts = posts.filter((post) => {
+    if (activeTab === 'posts') {
+      if (post.isCreatorTabPost) return false;
+    }
+
     if (activeTab === 'bookmarks') {
       if (!bookmarks.includes(post.id)) return false;
     }
@@ -282,6 +291,7 @@ export default function App() {
                     isCompact={settings.compactView}
                     language={settings.language}
                     onViewProfile={(u) => setSelectedUserForProfile(u)}
+                    onPostDeleted={refreshState}
                   />
                 ))}
               </div>
@@ -329,9 +339,22 @@ export default function App() {
             onBookmarkToggle={handleBookmarkToggle}
             onToast={addToast}
             onOpenCreatorPostModal={() => setIsCreatorPostModalOpen(true)}
+            onOpenCreatorApplication={() => setIsCreatorAppOpen(true)}
+            onOpenSupporterApplication={() => setIsSupporterAppOpen(true)}
             onViewProfile={(u) => setSelectedUserForProfile(u)}
             isLight={isLight}
             language={settings.language}
+          />
+        )}
+
+        {/* Tab View 6: Support Channel Panel */}
+        {activeTab === 'support' && (
+          <SupportChannelPanel
+            currentUser={currentUser}
+            onToast={addToast}
+            language={settings.language}
+            isLight={isLight}
+            onViewProfile={(u) => setSelectedUserForProfile(u)}
           />
         )}
       </main>
@@ -384,6 +407,24 @@ export default function App() {
         language={settings.language}
       />
 
+      <CreatorApplicationModal
+        isOpen={isCreatorAppOpen}
+        onClose={() => setIsCreatorAppOpen(false)}
+        currentUser={currentUser}
+        onToast={addToast}
+        language={settings.language}
+        isLight={isLight}
+      />
+
+      <SupporterApplicationModal
+        isOpen={isSupporterAppOpen}
+        onClose={() => setIsSupporterAppOpen(false)}
+        currentUser={currentUser}
+        onToast={addToast}
+        language={settings.language}
+        isLight={isLight}
+      />
+
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
@@ -391,6 +432,8 @@ export default function App() {
         onUpdateSettings={handleUpdateSettings}
         onResetStorage={handleResetData}
         onToast={addToast}
+        currentUser={currentUser}
+        onLogout={handleLogout}
       />
 
       {selectedUserForProfile && (
