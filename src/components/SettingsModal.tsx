@@ -15,6 +15,7 @@ import {
   LogOut
 } from 'lucide-react';
 import { User } from '../types';
+import { getAccentClasses } from '../utils/theme';
 
 export interface AppSettings {
   theme: 'dark' | 'light';
@@ -22,6 +23,9 @@ export interface AppSettings {
   compactView: boolean;
   language: 'de' | 'en';
   autoDownload: boolean;
+  backgroundTone?: 'slate' | 'zinc' | 'emerald' | 'indigo' | 'warm';
+  postStyle?: 'default' | 'elevated' | 'bordered' | 'minimal';
+  accentColor?: 'indigo' | 'emerald' | 'sky' | 'violet' | 'amber' | 'rose';
 }
 
 interface SettingsModalProps {
@@ -45,18 +49,38 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   currentUser,
   onLogout,
 }) => {
+  const accent = getAccentClasses(settings.accentColor || 'indigo');
+
+  // Close on ESC key
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const isLight = settings.theme === 'light';
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+      <div 
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            onClose();
+          }
+        }}
+      >
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 10 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 10 }}
-          className={`relative w-full max-w-md rounded-2xl shadow-2xl border p-6 overflow-hidden ${
+          className={`relative w-full max-w-md max-h-[85vh] rounded-2xl shadow-2xl border p-6 overflow-y-auto no-scrollbar ${
             isLight
               ? 'bg-white border-slate-200 text-slate-800'
               : 'bg-slate-900 border-slate-800 text-slate-100'
@@ -76,7 +100,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
           {/* Title */}
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-500">
+            <div className={`w-10 h-10 rounded-xl bg-opacity-20 border border-opacity-35 flex items-center justify-center ${accent.text} ${accent.border}`}>
               <SettingsIcon className="w-5 h-5" />
             </div>
             <div>
@@ -92,7 +116,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <div className="space-y-6">
             {/* Section 1: Light and Dark Mode */}
             <div>
-              <label className="text-xs font-bold uppercase tracking-wider text-indigo-500 mb-2.5 flex items-center gap-1.5">
+              <label className={`text-xs font-bold uppercase tracking-wider ${accent.text} mb-2.5 flex items-center gap-1.5`}>
                 <Sun className="w-3.5 h-3.5" />
                 {settings.language === 'de' ? 'Erscheinungsbild (Theme)' : 'Theme Mode'}
               </label>
@@ -104,13 +128,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   onClick={() => onUpdateSettings({ theme: 'dark' })}
                   className={`p-3.5 rounded-xl border flex items-center gap-3 transition-all ${
                     settings.theme === 'dark'
-                      ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300 font-semibold shadow-md'
+                      ? `${accent.solidBg}/20 border-current font-semibold shadow-md ${accent.text}`
                       : isLight
                       ? 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
                       : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-800'
                   }`}
                 >
-                  <div className="p-2 rounded-lg bg-slate-950 border border-slate-800 text-indigo-400">
+                  <div className={`p-2 rounded-lg bg-slate-950 border border-slate-800 ${accent.text}`}>
                     <Moon className="w-4 h-4" />
                   </div>
                   <div className="text-left flex-1">
@@ -119,7 +143,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
                     <div className="text-[10px] opacity-75">Dark Theme</div>
                   </div>
-                  {settings.theme === 'dark' && <Check className="w-4 h-4 text-indigo-400" />}
+                  {settings.theme === 'dark' && <Check className={`w-4 h-4 ${accent.text}`} />}
                 </button>
 
                 {/* Light Mode Option */}
@@ -128,7 +152,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   onClick={() => onUpdateSettings({ theme: 'light' })}
                   className={`p-3.5 rounded-xl border flex items-center gap-3 transition-all ${
                     settings.theme === 'light'
-                      ? 'bg-indigo-600/20 border-indigo-500 text-indigo-600 font-semibold shadow-md'
+                      ? `${accent.solidBg}/20 border-current font-semibold shadow-md ${accent.text}`
                       : isLight
                       ? 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
                       : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-800'
@@ -143,14 +167,123 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
                     <div className="text-[10px] opacity-75">Light Theme</div>
                   </div>
-                  {settings.theme === 'light' && <Check className="w-4 h-4 text-indigo-600" />}
+                  {settings.theme === 'light' && <Check className={`w-4 h-4 ${accent.text}`} />}
                 </button>
+              </div>
+            </div>
+
+            {/* Section 1.5: Independent Customization (Background, Posts, Accents) */}
+            <div className={`pt-4 border-t ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
+              <label className={`text-xs font-bold uppercase tracking-wider ${accent.text} mb-2.5 flex items-center gap-1.5`}>
+                <LayoutGrid className="w-3.5 h-3.5" />
+                {settings.language === 'de' ? 'Individuelles Design & Farben' : 'Custom Design & Colors'}
+              </label>
+
+              <div className="space-y-3.5">
+                {/* Background Tone */}
+                <div className={`p-3 rounded-xl border ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/60 border-slate-800'}`}>
+                  <div className="text-xs font-semibold mb-2 flex items-center justify-between">
+                    <span>{settings.language === 'de' ? 'Hintergrund-Farbton' : 'Background Tone'}</span>
+                    <span className={`text-[10px] ${accent.text} capitalize`}>({settings.backgroundTone || 'slate'})</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-5 gap-1.5">
+                    {[
+                      { id: 'slate', label: settings.language === 'de' ? 'Klassisch' : 'Slate' },
+                      { id: 'zinc', label: settings.language === 'de' ? 'Anthrazit' : 'Zinc' },
+                      { id: 'emerald', label: settings.language === 'de' ? 'Natur' : 'Emerald' },
+                      { id: 'indigo', label: settings.language === 'de' ? 'Mitternacht' : 'Indigo' },
+                      { id: 'warm', label: settings.language === 'de' ? 'Warm' : 'Warm' },
+                    ].map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => onUpdateSettings({ backgroundTone: item.id as any })}
+                        className={`py-2 px-2.5 rounded-lg text-xs font-semibold transition-all border flex flex-col items-center justify-center gap-0.5 ${
+                          settings.backgroundTone === item.id
+                            ? `${accent.bg} text-white border-transparent shadow-md ring-2 ${accent.ring}`
+                            : isLight
+                            ? 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                            : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800'
+                        }`}
+                      >
+                        <span className="capitalize">{item.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Post Card Style */}
+                <div className={`p-3 rounded-xl border ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/60 border-slate-800'}`}>
+                  <div className="text-xs font-semibold mb-2 flex items-center justify-between">
+                    <span>{settings.language === 'de' ? 'Beitrags-Design (Posts)' : 'Post Card Style'}</span>
+                    <span className={`text-[10px] ${accent.text} capitalize`}>({settings.postStyle || 'default'})</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {[
+                      { id: 'default', label: settings.language === 'de' ? 'Standard' : 'Default' },
+                      { id: 'elevated', label: settings.language === 'de' ? 'Hervorgehoben' : 'Elevated' },
+                      { id: 'bordered', label: settings.language === 'de' ? 'Mit Rahmen' : 'Bordered' },
+                      { id: 'minimal', label: settings.language === 'de' ? 'Minimalistisch' : 'Minimal' },
+                    ].map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => onUpdateSettings({ postStyle: item.id as any })}
+                        className={`py-2 px-3 rounded-lg text-xs font-semibold transition-all border flex items-center justify-between ${
+                          settings.postStyle === item.id
+                            ? `${accent.bg} text-white border-transparent shadow-md ring-2 ${accent.ring}`
+                            : isLight
+                            ? 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                            : 'bg-slate-900 text-slate-300 border-slate-700 hover:bg-slate-800'
+                        }`}
+                      >
+                        <span>{item.label}</span>
+                        {settings.postStyle === item.id && <Check className="w-3.5 h-3.5 text-white" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Accent Color */}
+                <div className={`p-3 rounded-xl border ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/60 border-slate-800'}`}>
+                  <div className="text-xs font-semibold mb-2 flex items-center justify-between">
+                    <span>{settings.language === 'de' ? 'Akzentfarbe' : 'Accent Color'}</span>
+                    <span className={`text-[10px] ${accent.text} capitalize`}>({settings.accentColor || 'indigo'})</span>
+                  </div>
+                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                    {[
+                      { id: 'indigo', name: 'Indigo', color: 'bg-indigo-600' },
+                      { id: 'emerald', name: 'Smaragd', color: 'bg-emerald-600' },
+                      { id: 'sky', name: 'Himmelblau', color: 'bg-sky-600' },
+                      { id: 'violet', name: 'Violett', color: 'bg-violet-600' },
+                      { id: 'amber', name: 'Gold', color: 'bg-amber-600' },
+                      { id: 'rose', name: 'Rosa', color: 'bg-rose-600' },
+                    ].map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => onUpdateSettings({ accentColor: item.id as any })}
+                        className={`py-2 px-1 rounded-lg flex flex-col items-center gap-1.5 transition-all border ${
+                          settings.accentColor === item.id
+                            ? isLight ? `bg-white border-current shadow-md ring-2 ${accent.ring} ${accent.text}` : `bg-slate-900 border-current shadow-md ring-2 ${accent.ring} ${accent.text}`
+                            : isLight ? 'bg-white/50 border-slate-200 hover:bg-white' : 'bg-slate-900/50 border-slate-800 hover:bg-slate-900'
+                        }`}
+                        title={item.name}
+                      >
+                        <div className={`w-5 h-5 rounded-full ${item.color} flex items-center justify-center shadow`}>
+                          {settings.accentColor === item.id && <Check className="w-3 h-3 text-white" />}
+                        </div>
+                        <span className="text-[10px] font-medium">{item.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* Section 2: More Settings */}
             <div className={`pt-4 border-t ${isLight ? 'border-slate-200' : 'border-slate-800'}`}>
-              <label className="text-xs font-bold uppercase tracking-wider text-indigo-500 mb-3 flex items-center gap-1.5">
+              <label className={`text-xs font-bold uppercase tracking-wider ${accent.text} mb-3 flex items-center gap-1.5`}>
                 <Sliders className="w-3.5 h-3.5" />
                 {settings.language === 'de' ? 'Weitere Einstellungen' : 'More Settings'}
               </label>
@@ -161,7 +294,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/60 border-slate-800'
                 }`}>
                   <div className="flex items-center gap-2.5">
-                    <Globe className="w-4 h-4 text-indigo-400" />
+                    <Globe className={`w-4 h-4 ${accent.text}`} />
                     <div>
                       <div className="text-xs font-semibold">
                         {settings.language === 'de' ? 'Sprache' : 'Language'}
@@ -171,6 +304,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       </div>
                     </div>
                   </div>
+
                   <div className="flex bg-slate-800/40 p-0.5 rounded-lg border border-slate-700/50">
                     <button
                       type="button"

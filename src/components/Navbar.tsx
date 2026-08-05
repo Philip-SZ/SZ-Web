@@ -1,9 +1,10 @@
 import React from 'react';
 import { User } from '../types';
-import { User as UserIcon, ShieldCheck, Lock, UserCheck, LogOut, PlusCircle, Bookmark, Layers, Settings, BadgeCheck, Bell, Calendar, Sparkles, ShieldAlert } from 'lucide-react';
+import { User as UserIcon, ShieldCheck, Lock, UserCheck, LogOut, PlusCircle, Bookmark, Layers, Settings, BadgeCheck, Bell, Calendar, Sparkles, ShieldAlert, Users } from 'lucide-react';
 import { getNotifications, canApproveUsers, canCreateMainPost, isFullAdmin, isSupporter, getReportedPosts, getCreatorApplications } from '../storage';
+import { getAccentClasses } from '../utils/theme';
 
-export type TabType = 'posts' | 'bookmarks' | 'notifications' | 'events' | 'approvals' | 'creator' | 'support';
+export type TabType = 'posts' | 'bookmarks' | 'notifications' | 'events' | 'approvals' | 'creator' | 'support' | 'friends';
 
 interface NavbarProps {
   currentUser: User | null;
@@ -18,6 +19,7 @@ interface NavbarProps {
   onOpenMyProfile?: () => void;
   isLight?: boolean;
   language?: 'de' | 'en';
+  accentColor?: string;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -33,8 +35,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenMyProfile,
   isLight = false,
   language = 'de',
+  accentColor = 'indigo',
 }) => {
   const isDe = language === 'de';
+  const accent = getAccentClasses(accentColor);
   const canApprove = canApproveUsers(currentUser);
   const canSupport = isSupporter(currentUser);
   const canCreate = canCreateMainPost(currentUser);
@@ -52,15 +56,15 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex flex-col lg:flex-row items-center justify-between w-full gap-3">
           <div className="flex items-center justify-between w-full lg:w-auto shrink-0">
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-sky-400 p-0.5 flex items-center justify-center shadow-md shadow-indigo-500/20 shrink-0">
+              <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr ${accent.gradient} p-0.5 flex items-center justify-center shadow-md ${accent.shadow} shrink-0`}>
                 <div className={`w-full h-full rounded-[10px] flex items-center justify-center ${isLight ? 'bg-white' : 'bg-slate-950'}`}>
-                  <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-500" />
+                  <ShieldCheck className={`w-4 h-4 sm:w-5 sm:h-5 ${accent.text}`} />
                 </div>
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
                   <h1 className={`font-bold text-sm sm:text-lg tracking-tight leading-none ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
-                    SZ <span className="text-indigo-500 font-medium">Portal</span>
+                    SZ <span className={`${accent.text} font-medium`}>Portal</span>
                   </h1>
                 </div>
                 <p className={`text-[10px] sm:text-xs hidden md:block ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
@@ -90,7 +94,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                       }`}
                       title={isDe ? 'Mein Profil' : 'My Profile'}
                     >
-                      <UserIcon className="w-4 h-4 text-indigo-400" />
+                      <UserIcon className={`w-4 h-4 ${accent.text}`} />
                     </button>
                   )}
                   <button
@@ -107,7 +111,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               {!currentUser && (
                 <button
                   onClick={onOpenLogin}
-                  className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-2 rounded-xl shadow-md transition-all whitespace-nowrap"
+                  className={`${accent.bg} text-white text-xs font-semibold px-3 py-2 rounded-xl shadow-md transition-all whitespace-nowrap`}
                 >
                   {isDe ? 'Einloggen' : 'Sign In'}
                 </button>
@@ -125,7 +129,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onClick={() => onTabChange('posts')}
                 className={`flex items-center justify-center sm:justify-start gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                   activeTab === 'posts'
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                    ? `${accent.bg} text-white shadow-md ${accent.shadow}`
                     : isLight
                     ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
@@ -143,7 +147,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   title={!isApproved ? (isDe ? 'Erfordert Freischaltung durch Phillip Dev' : 'Requires account release by Phillip Dev') : (isDe ? 'Gespeicherte Lesezeichen' : 'Saved Bookmarks')}
                   className={`flex items-center justify-center sm:justify-start gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                     activeTab === 'bookmarks'
-                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                      ? `${accent.bg} text-white shadow-md ${accent.shadow}`
                       : !isApproved
                       ? 'text-slate-400 cursor-not-allowed opacity-60'
                       : isLight
@@ -161,7 +165,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onClick={() => onTabChange('notifications')}
                 className={`relative flex items-center justify-center sm:justify-start gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                   activeTab === 'notifications'
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                    ? `${accent.bg} text-white shadow-md ${accent.shadow}`
                     : isLight
                     ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
@@ -170,7 +174,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <Bell className="w-3.5 h-3.5 shrink-0" />
                 <span>{isDe ? 'Mitteilungen' : 'Notifications'}</span>
                 {unreadNotifCount > 0 && (
-                  <span className="ml-1 px-1.5 py-0.2 bg-sky-500 text-white text-[10px] font-bold rounded-full animate-pulse">
+                  <span className={`ml-1 px-1.5 py-0.2 ${accent.solidBg} text-white text-[10px] font-bold rounded-full animate-pulse`}>
                     {unreadNotifCount}
                   </span>
                 )}
@@ -181,7 +185,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onClick={() => onTabChange('events')}
                 className={`flex items-center justify-center sm:justify-start gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                   activeTab === 'events'
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                    ? `${accent.bg} text-white shadow-md ${accent.shadow}`
                     : isLight
                     ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
@@ -196,7 +200,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onClick={() => onTabChange('creator')}
                 className={`flex items-center justify-center sm:justify-start gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                   activeTab === 'creator'
-                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                    ? `${accent.bg} text-white shadow-md ${accent.shadow}`
                     : isLight
                     ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
@@ -206,13 +210,35 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span>{isDe ? 'Creator-Tab' : 'Creator Tab'}</span>
               </button>
 
+              {/* Friends Tab */}
+              {currentUser && (
+                <button
+                  onClick={() => onTabChange('friends')}
+                  className={`relative flex items-center justify-center sm:justify-start gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                    activeTab === 'friends'
+                      ? `${accent.bg} text-white shadow-md ${accent.shadow}`
+                      : isLight
+                      ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                  }`}
+                >
+                  <Users className="w-3.5 h-3.5 shrink-0" />
+                  <span>{isDe ? 'Freunde' : 'Friends'}</span>
+                  {currentUser.friendRequestsReceived && currentUser.friendRequestsReceived.length > 0 && (
+                    <span className={`ml-1 px-1.5 py-0.2 ${accent.solidBg} text-white text-[10px] font-bold rounded-full animate-pulse`}>
+                      {currentUser.friendRequestsReceived.length}
+                    </span>
+                  )}
+                </button>
+              )}
+
               {/* Approvals Tab */}
               {canApprove && (
                 <button
                   onClick={() => onTabChange('approvals')}
                   className={`relative flex items-center justify-center sm:justify-start gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                     activeTab === 'approvals'
-                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                      ? `${accent.bg} text-white shadow-md ${accent.shadow}`
                       : isLight
                       ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
@@ -234,7 +260,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   onClick={() => onTabChange('support')}
                   className={`relative flex items-center justify-center sm:justify-start gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                     activeTab === 'support'
-                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                      ? `${accent.bg} text-white shadow-md ${accent.shadow}`
                       : isLight
                       ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
@@ -277,7 +303,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 }`}
                 title={isDe ? 'Mein Profil anzeigen und Kontoverwaltung' : 'View My Profile'}
               >
-                <UserIcon className="w-4 h-4 text-indigo-400" />
+                <UserIcon className={`w-4 h-4 ${accent.text}`} />
                 <span>{isDe ? 'Mein Profil' : 'My Profile'}</span>
               </button>
             )}
@@ -285,7 +311,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {canCreate && (
               <button
                 onClick={onOpenPostCreator}
-                className="flex items-center gap-1.5 bg-gradient-to-r from-indigo-500 to-sky-500 hover:from-indigo-600 hover:to-sky-600 text-white text-xs font-semibold px-3 py-2 rounded-xl shadow-md transition-all active:scale-95"
+                className={`flex items-center gap-1.5 bg-gradient-to-r ${accent.gradient} text-white text-xs font-semibold px-3 py-2 rounded-xl shadow-md transition-all active:scale-95`}
               >
                 <PlusCircle className="w-4 h-4" />
                 <span>{isDe ? 'Neuer Beitrag' : 'New Post'}</span>
@@ -295,7 +321,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             {currentUser ? (
               <div className="flex items-center gap-2 p-1.5 pl-3 pr-1.5 rounded-xl border bg-slate-950/80 border-slate-800">
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-lg bg-indigo-600 text-white font-bold flex items-center justify-center text-[10px] shrink-0 overflow-hidden">
+                  <div className={`w-6 h-6 rounded-lg ${accent.solidBg} text-white font-bold flex items-center justify-center text-[10px] shrink-0 overflow-hidden`}>
                     {currentUser.avatarUrl ? (
                       <img src={currentUser.avatarUrl} alt={currentUser.username} className="w-full h-full object-cover" />
                     ) : (
@@ -306,7 +332,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     {currentUser.username}
                   </span>
                   {currentUser.isVerified && (
-                    <BadgeCheck className="w-4 h-4 text-sky-400 fill-sky-400/20 shrink-0" title={isDe ? "Verifiziertes Konto" : "Verified Account"} />
+                    <BadgeCheck className={`w-4 h-4 ${accent.text}`} title={isDe ? "Verifiziertes Konto" : "Verified Account"} />
                   )}
                 </div>
 
@@ -321,7 +347,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             ) : (
               <button
                 onClick={onOpenLogin}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow-md transition-all active:scale-95 whitespace-nowrap"
+                className={`${accent.bg} text-white text-xs font-semibold px-4 py-2 rounded-xl shadow-md transition-all active:scale-95 whitespace-nowrap`}
               >
                 {isDe ? 'Einloggen' : 'Sign In'}
               </button>
@@ -332,3 +358,4 @@ export const Navbar: React.FC<NavbarProps> = ({
     </header>
   );
 };
+

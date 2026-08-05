@@ -11,6 +11,9 @@ const COMMENTS_KEY = 'phillip_dev_portal_comments';
 
 export interface AppSettings {
   theme: 'dark' | 'light';
+  backgroundTone: 'slate' | 'zinc' | 'emerald' | 'indigo' | 'warm';
+  postStyle: 'default' | 'elevated' | 'bordered' | 'minimal';
+  accentColor: 'indigo' | 'emerald' | 'sky' | 'violet' | 'amber' | 'rose';
   fontSize: 'normal' | 'large';
   compactView: boolean;
   language: 'de' | 'en';
@@ -19,6 +22,9 @@ export interface AppSettings {
 
 export const DEFAULT_SETTINGS: AppSettings = {
   theme: 'dark',
+  backgroundTone: 'slate',
+  postStyle: 'default',
+  accentColor: 'indigo',
   fontSize: 'normal',
   compactView: false,
   language: 'de',
@@ -829,6 +835,8 @@ export function declineFriendRequest(userId: string, requesterId: string): { suc
   return { success: true };
 }
 
+export const rejectFriendRequest = declineFriendRequest;
+
 export function removeFriend(userId1: string, userId2: string): { success: boolean } {
   const users = getUsersWithPasswords();
 
@@ -1374,5 +1382,8 @@ export function rejectSupporterApplication(appId: string): boolean {
 
   return true;
 }
+
+
+
 
 

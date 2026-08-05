@@ -3,6 +3,7 @@ import { Post, User, FileAttachment, Comment } from '../types';
 import { Bookmark, Download, Lock, FileText, Code, FileArchive, File, ShieldCheck, Tag, Check, Eye, BadgeCheck, MessageSquare, Send, Trash2, Heart, Star, Flag } from 'lucide-react';
 import { recordDownload, toggleBookmark, getUsers, getComments, createComment, deleteComment, canDeleteComment, canDeletePost, deletePost, toggleLikePost, reportPost } from '../storage';
 import { UserRankBadge } from './UserRankBadge';
+import { getAccentClasses } from '../utils/theme';
 
 interface PostCardProps {
   post: Post;
@@ -15,6 +16,8 @@ interface PostCardProps {
   language?: 'de' | 'en';
   onViewProfile?: (user: User) => void;
   onPostDeleted?: () => void;
+  postStyle?: 'default' | 'elevated' | 'bordered' | 'minimal';
+  accentColor?: string;
 }
 
 export const PostCard: React.FC<PostCardProps> = ({
@@ -28,8 +31,11 @@ export const PostCard: React.FC<PostCardProps> = ({
   language = 'de',
   onViewProfile,
   onPostDeleted,
+  postStyle = 'default',
+  accentColor = 'indigo',
 }) => {
   const isDe = language === 'de';
+  const accent = getAccentClasses(accentColor);
   const isApproved = currentUser?.status === 'approved';
   const [showComments, setShowComments] = useState(false);
   const [commentsList, setCommentsList] = useState<Comment[]>(() => getComments(post.id));
@@ -195,11 +201,15 @@ export const PostCard: React.FC<PostCardProps> = ({
   };
 
   return (
-    <article className={`rounded-2xl shadow-xl relative overflow-hidden transition-all border ${
+    <article className={`rounded-2xl relative overflow-hidden transition-all border ${
       isCompact ? 'p-3.5 sm:p-4' : 'p-5 sm:p-6'
     } ${
+      postStyle === 'elevated' ? `shadow-2xl ${accent.shadow}` : postStyle === 'minimal' ? 'shadow-none bg-opacity-60' : 'shadow-xl'
+    } ${
+      postStyle === 'bordered' ? `border-2 ${accent.border}` : ''
+    } ${
       isLight
-        ? 'bg-white border-slate-200 hover:border-indigo-300 text-slate-800'
+        ? `bg-white border-slate-200 hover:border-current ${accent.text} text-slate-800`
         : 'bg-slate-900 border-slate-800 hover:border-slate-700 text-slate-100'
     }`}>
       
@@ -208,13 +218,13 @@ export const PostCard: React.FC<PostCardProps> = ({
         <div className="flex items-center gap-3">
           <div
             onClick={handleAuthorClick}
-            className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-sky-400 p-0.5 flex items-center justify-center shadow-md cursor-pointer hover:scale-105 transition-transform overflow-hidden shrink-0"
+            className={`w-10 h-10 rounded-full bg-gradient-to-tr ${accent.gradient} p-0.5 flex items-center justify-center shadow-md cursor-pointer hover:scale-105 transition-transform overflow-hidden shrink-0`}
           >
             {authorUser?.avatarUrl ? (
               <img src={authorUser.avatarUrl} alt={post.authorName} className="w-full h-full rounded-full object-cover" />
             ) : (
               <div className={`w-full h-full rounded-full flex items-center justify-center font-bold text-xs ${
-                isLight ? 'bg-white text-indigo-600' : 'bg-slate-950 text-indigo-300'
+                isLight ? `bg-white ${accent.text}` : `bg-slate-950 ${accent.text}`
               }`}>
                 {post.authorName.slice(0, 2).toUpperCase()}
               </div>
@@ -224,14 +234,14 @@ export const PostCard: React.FC<PostCardProps> = ({
             <div className="flex items-center gap-1.5 flex-wrap">
               <span
                 onClick={handleAuthorClick}
-                className={`font-semibold text-sm cursor-pointer hover:text-indigo-400 transition-colors ${
+                className={`font-semibold text-sm cursor-pointer hover:${accent.text} transition-colors ${
                   isLight ? 'text-slate-900' : 'text-slate-100'
                 }`}
               >
                 {post.authorName}
               </span>
               {isAuthorVerified && (
-                <BadgeCheck className="w-4 h-4 text-sky-400 fill-sky-400/20 shrink-0" title={isDe ? 'Verifiziertes Konto (Blauer Haken)' : 'Verified Account'} />
+                <BadgeCheck className={`w-4 h-4 ${accent.text} fill-current/25 shrink-0`} title={isDe ? 'Verifiziertes Konto (Blauer Haken)' : 'Verified Account'} />
               )}
               <UserRankBadge rank={authorUser.rank || 'admin'} language={language} size="sm" />
             </div>
@@ -260,18 +270,18 @@ export const PostCard: React.FC<PostCardProps> = ({
           }
           className={`p-2 rounded-xl border transition-all ${
             isBookmarked
-              ? 'bg-indigo-600/30 border-indigo-500 text-indigo-400'
+              ? `${accent.solidBg}/30 border-current ${accent.text}`
               : !isApproved
               ? 'bg-slate-100 dark:bg-slate-950/40 border-slate-200 text-slate-400 cursor-not-allowed'
               : isLight
-              ? 'bg-slate-100 border-slate-200 text-slate-600 hover:text-indigo-600 hover:bg-slate-200/60'
-              : 'bg-slate-950/60 border-slate-800/80 text-slate-400 hover:text-indigo-400 hover:bg-slate-800/60'
+              ? `bg-slate-100 border-slate-200 text-slate-600 hover:${accent.text} hover:bg-slate-200/60`
+              : `bg-slate-950/60 border-slate-800/80 text-slate-400 hover:${accent.text} hover:bg-slate-800/60`
           }`}
         >
           {!isApproved ? (
             <Lock className="w-4 h-4 text-amber-500/70" />
           ) : (
-            <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-indigo-500 text-indigo-500' : ''}`} />
+            <Bookmark className={`w-4 h-4 ${isBookmarked ? `fill-current ${accent.text}` : ''}`} />
           )}
         </button>
       </div>
@@ -294,7 +304,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                 isLight ? 'bg-slate-100 text-slate-700 border-slate-200' : 'bg-slate-950 text-slate-300 border-slate-800'
               }`}
             >
-              <Tag className="w-2.5 h-2.5 text-indigo-500" />
+              <Tag className={`w-2.5 h-2.5 ${accent.text}`} />
               {tag}
             </span>
           ))}
@@ -354,8 +364,8 @@ export const PostCard: React.FC<PostCardProps> = ({
                 className={`p-2.5 sm:p-3 rounded-xl border transition-all flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 ${
                   isApproved
                     ? isLight
-                      ? 'bg-slate-50 border-slate-200 hover:border-indigo-400'
-                      : 'bg-slate-950/80 border-slate-800 hover:border-indigo-500/50'
+                      ? 'bg-slate-50 border-slate-200 hover:border-current'
+                      : 'bg-slate-950/80 border-slate-800 hover:border-current'
                     : isLight
                     ? 'bg-slate-100 border-slate-200 opacity-75'
                     : 'bg-slate-950/40 border-slate-800/60 opacity-75'
@@ -387,7 +397,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                   }
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shrink-0 ml-auto ${
                     isApproved
-                      ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/20'
+                      ? `${accent.bg} ${accent.hoverBg} text-white shadow-md ${accent.shadow}`
                       : isLight
                       ? 'bg-slate-200 text-slate-500 border border-slate-300 cursor-not-allowed'
                       : 'bg-slate-900 text-slate-500 border border-slate-800 cursor-not-allowed'

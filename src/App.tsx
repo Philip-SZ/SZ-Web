@@ -32,6 +32,7 @@ import { SupporterApplicationModal } from './components/SupporterApplicationModa
 import { SettingsModal } from './components/SettingsModal';
 import { UserProfileModal } from './components/UserProfileModal';
 import { SupportChannelPanel } from './components/SupportChannelPanel';
+import { FriendsView } from './components/FriendsView';
 import { ToastContainer, ToastMessage } from './components/Toast';
 import { Search, Bookmark, Layers, ShieldCheck, Sparkles, UserCheck, Lock } from 'lucide-react';
 
@@ -167,12 +168,30 @@ export default function App() {
   const isLight = settings.theme === 'light';
   const isDe = settings.language === 'de';
 
+  const getBackgroundClass = () => {
+    if (isLight) {
+      switch (settings.backgroundTone) {
+        case 'zinc': return 'bg-zinc-100 text-slate-800';
+        case 'emerald': return 'bg-emerald-50/60 text-slate-800';
+        case 'indigo': return 'bg-indigo-50/50 text-slate-800';
+        case 'warm': return 'bg-stone-100 text-slate-800';
+        default: return 'bg-slate-100 text-slate-800';
+      }
+    } else {
+      switch (settings.backgroundTone) {
+        case 'zinc': return 'bg-zinc-950 text-slate-100';
+        case 'emerald': return 'bg-[#061410] text-slate-100';
+        case 'indigo': return 'bg-[#090b14] text-slate-100';
+        case 'warm': return 'bg-[#141210] text-slate-100';
+        default: return 'bg-slate-950 text-slate-100';
+      }
+    }
+  };
+
   return (
     <div className={`min-h-screen flex flex-col font-sans antialiased transition-colors ${
       settings.fontSize === 'large' ? 'text-base' : 'text-sm'
-    } ${
-      isLight ? 'bg-slate-100 text-slate-800 selection:bg-indigo-600 selection:text-white' : 'bg-slate-950 text-slate-100 selection:bg-indigo-500 selection:text-white'
-    }`}>
+    } ${getBackgroundClass()} selection:bg-indigo-500 selection:text-white`}>
       
       {/* Navigation */}
       <Navbar
@@ -292,6 +311,8 @@ export default function App() {
                     language={settings.language}
                     onViewProfile={(u) => setSelectedUserForProfile(u)}
                     onPostDeleted={refreshState}
+                    postStyle={settings.postStyle}
+                    accentColor={settings.accentColor}
                   />
                 ))}
               </div>
@@ -355,6 +376,20 @@ export default function App() {
             language={settings.language}
             isLight={isLight}
             onViewProfile={(u) => setSelectedUserForProfile(u)}
+          />
+        )}
+
+        {/* Tab View 7: Friends View */}
+        {activeTab === 'friends' && currentUser && (
+          <FriendsView
+            currentUser={currentUser}
+            onUpdateUser={(updated) => {
+              setCurrentUserLocal(updated);
+              refreshState();
+            }}
+            isLight={isLight}
+            language={settings.language}
+            accentColor={settings.accentColor}
           />
         )}
       </main>
